@@ -1,0 +1,51 @@
+{
+  "name": "group-element",
+  "version": "v0.1.0",
+  "description": "A toggleable element that groups other elements within Home Assistant's picture-elements cards.",
+  "keywords": [
+    "home-assistant",
+    "homeassistant",
+    "hass",
+    "automation",
+    "lovelace",
+    "media",
+    "custom-cards",
+    "picture-elements"
+  ],
+  "main": "src/main.js",
+  "module": "src/main.js",
+  "repository": "git@github.com:yosilevy/group-element.git",
+  "author": "Yosi Levy <yosilevy@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "deep-clone-simple": "^1.1.1",
+    "lit-element": "^2.0.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.3",
+    "@babel/plugin-proposal-class-properties": "^7.3.3",
+    "@babel/plugin-proposal-decorators": "^7.3.0",
+    "@babel/plugin-transform-template-literals": "^7.2.0",
+    "@babel/preset-env": "^7.3.1",
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-iife-wrap": "^1.1.0",
+    "babel-preset-minify": "^0.5.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^4.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-prettier": "^3.0.1",
+    "eslint-plugin-react": "^7.12.4",
+    "prettier": "^1.16.4",
+    "rollup": "^0.66.6",
+    "rollup-plugin-node-resolve": "^3.4.0"
+  },
+  "scripts": {
+    "build": "npm run lint && npm run rollup && npm run babel",
+    "rollup": "rollup -c",
+    "babel": "babel dist/group-element-bundle.js --out-file dist/group-element-bundle.js",
+    "lint": "./node_modules/.bin/eslint src/* --ext .js",
+    "watch": "rollup -c --watch"
+  }
+}
