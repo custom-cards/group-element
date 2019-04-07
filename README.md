@@ -87,11 +87,25 @@ No more clogged UIs or living without full control due to space contraints.
 ### Example usage
 
 #### Basic setup
+Show a group that is initially hidden and shows when tapped
+
+//todo: update image
 <img src="https://user-images.githubusercontent.com/457678/52081816-771c1b00-259b-11e9-8c1e-cfd93ac3e66d.png" width="500px" alt="Basic card example" />
 
 ```yaml
-- type: custom:mini-media-player
-  entity: media_player.kitchen_speakers
+- type: picture-elements
+  image: /local/living-room.jpg
+  elements:
+    type: 'custom:group-element'
+    toggle_tap: true
+    visible: false
+    style:
+      height: 40%
+      left: 41%
+      top: 30%
+      width: 25%
+    - elements:
+        # your other elements go here
 ```
 
 #### Compact card
