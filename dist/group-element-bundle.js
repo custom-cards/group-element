@@ -122,6 +122,7 @@
         this._config = {};
         this._elements = [];
         this._visible = false;
+        this._toggleTap = false;
         this.addEventListener("click", ev => {
           if (ev.target !== this) {
             ev.stopPropagation();
@@ -154,6 +155,7 @@
           this._visible = config.visible;
         }
 
+        this._toggleTap = config.toggle_tap;
         this.updateElements();
       }
 
@@ -189,7 +191,7 @@
       }
 
       toggleVisibility() {
-        if (!this._config.toggle_tap) {
+        if (!this._toggleTap) {
           return;
         }
 

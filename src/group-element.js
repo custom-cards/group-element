@@ -7,6 +7,7 @@ class HuiGroupElement extends HTMLElement {
     this._config = {};
     this._elements = [];
     this._visible = false;
+    this._toggleTap = false;
 
     this.addEventListener("click", (ev) => {
       if (ev.target !== this) {
@@ -38,6 +39,8 @@ class HuiGroupElement extends HTMLElement {
     if (config.visible !== undefined) {
       this._visible = config.visible;
     }
+
+    this._toggleTap = config.toggle_tap;
 
     this.updateElements();
   }
@@ -74,7 +77,7 @@ class HuiGroupElement extends HTMLElement {
   }
 
   toggleVisibility() {
-    if (!this._config.toggle_tap) {
+    if (!this._toggleTap) {
       return;
     }
 

@@ -1,7 +1,7 @@
 import resolve from "rollup-plugin-node-resolve";
 
 export default {
-  input: "src/main.js",
+  input: "src/group-element.js",
   output: {
     file: "dist/group-element-bundle.js",
     format: "umd",

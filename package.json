@@ -12,8 +12,8 @@
     "custom-cards",
     "picture-elements"
   ],
-  "main": "src/main.js",
-  "module": "src/main.js",
+  "main": "src/group-element.js",
+  "module": "src/group-element.js",
   "repository": "git@github.com:yosilevy/group-element.git",
   "author": "Yosi Levy <yosilevy@gmail.com>",
   "license": "Apache-2.0",
