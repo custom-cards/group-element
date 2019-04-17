@@ -23,7 +23,7 @@ export const createHuiElement = (config) => {
 
     customElements.whenDefined(tag).then(() => {
       clearTimeout(timer);
-      fireEvent(element, "ll-rebuild");
+      fireEvent(element.parentElement.parentElement, "ll-rebuild");
     });
 
     return element;

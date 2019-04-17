@@ -28,13 +28,12 @@
       return result;
     }
 
-    const fireEvent = (node, type, detail, options) => {
-      options = options || {};
+    const fireEvent = (node, type, detail) => {
       detail = detail === null || detail === undefined ? {} : detail;
       const event = new Event(type, {
-        bubbles: options.bubbles === undefined ? true : options.bubbles,
-        cancelable: Boolean(options.cancelable),
-        composed: options.composed === undefined ? true : options.composed
+        bubbles: true,
+        cancelable: false,
+        composed: true
       });
       event.detail = detail;
       node.dispatchEvent(event);
@@ -62,7 +61,7 @@
 
         customElements.whenDefined(tag).then(() => {
           clearTimeout(timer);
-          fireEvent(element, "ll-rebuild");
+          fireEvent(element.parentElement.parentElement, "ll-rebuild");
         });
         return element;
       }
@@ -115,7 +114,7 @@
       return element;
     }
 
-    class HuiGroupElement extends HTMLElement {
+    customElements.define("group-element", class HuiGroupElement extends HTMLElement {
       constructor() {
         super();
         this._hass = {};
@@ -123,6 +122,7 @@
         this._elements = [];
         this._visible = false;
         this._toggleTap = false;
+        this._groupingId = -1;
         this.addEventListener("click", ev => {
           if (ev.target !== this) {
             ev.stopPropagation();
@@ -155,7 +155,15 @@
           this._visible = config.visible;
         }
 
-        this._toggleTap = config.toggle_tap;
+        if (config.toggle_tap !== undefined) {
+          this._toggleTap = config.toggle_tap;
+        }
+
+        if (config.grouping_id !== undefined) {
+          this._groupingId = config.grouping_id;
+          this.attributes.groupingId = config.grouping_id;
+        }
+
         this.updateElements();
       }
 
@@ -164,8 +172,12 @@
         this.updateElements();
       }
 
+      connectedCallback() {
+        this.updateElements();
+      }
+
       updateElements() {
-        if (!this._hass || !this._config) {
+        if (!this._hass || !this._config || !this.parentElement) {
           return;
         }
 
@@ -175,6 +187,10 @@
 
             this._elements.push(element);
           });
+
+          if (this._config.close_button !== undefined && this._config.close_button.show) {
+            this._elements.push(this.createCloseButton(this._config.close_button));
+          }
         }
 
         this._elements.map(el => {
@@ -197,10 +213,37 @@
 
         this._visible = !this._visible;
         this.updateElements();
+
+        if (this._visible && this._groupingId !== -1) {
+          this.parentElement.querySelectorAll("group-element").forEach(el => {
+            if (el !== this && el.attributes.groupingId !== undefined && el.attributes.groupingId === this._groupingId) {
+              if (el._visible) {
+                el.toggleVisibility();
+              }
+            }
+          });
+        }
       }
 
-    }
+      createCloseButton(buttonConfig) {
+        const left = buttonConfig.left !== undefined ? buttonConfig.left : "calc(100% - 11px)";
+        const top = buttonConfig.top !== undefined ? buttonConfig.top : "calc(100% - 11px)";
+        const element = document.createElement("ha-icon");
+        element.icon = buttonConfig.icon !== undefined ? buttonConfig.icon : "hass:close";
+        element.className = "element";
+        element.style.left = left;
+        element.style.top = top;
+        element.addEventListener("click", ev => {
+          if (ev.target !== element) {
+            ev.stopPropagation();
+            return;
+          }
 
-    customElements.define("group-element", HuiGroupElement);
+          this.toggleVisibility();
+        });
+        return element;
+      }
+
+    });
   });
 })();

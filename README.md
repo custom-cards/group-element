@@ -9,6 +9,8 @@ Perfect for creating dynamic interfaces while reusing UI real-estate.
 
 ## Install
 
+**Please note - you should place this file at the very end of the resources section since as it may contain other custom elements they should be loaded prior to the group element.**
+
 ### Simple install
 
 1. Download and copy `group-element-bundle.js` from the [latest release](https://github.com/yosilevy/group-element/releases/latest) into your `config/www` directory.
@@ -83,6 +85,17 @@ No more clogged UIs or living without full control due to space contraints.
 | elements | list | **required** | v0.1 | Elements contained in the group. Any valid element hierarchy of picture-elements.
 | toggle_tap | boolean | false | v0.1 | Enable toggling visibility of children elements when tapped.
 | visible | boolean | false | v0.1 | Sets initial visibility.
+
+#### Close_button object
+| Name | Type | Default | Since | Description |
+|------|------|---------|-------|-------------|
+| show | boolean | false | v0.1 | Show the close button to enable closing the group (regardless of toggle_tap).
+| icon | string | hass:close | v0.1 | Sets the icon to show on the close button.
+| left | string | calc(100% - 11px) | v0.1 | Sets the left position of the close button (CSS).
+| top | string | calc(100% - 11px) | v0.1 | Sets the top position of the close button (CSS).
+
+
+Note: you may style the icon by using the following style variables: --close-button-color
 
 ### Example usage
 

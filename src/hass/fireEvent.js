@@ -1,10 +1,9 @@
-export const fireEvent = (node, type, detail, options) => {
-  options = options || {};
+export const fireEvent = (node, type, detail) => {
   detail = detail === null || detail === undefined ? {} : detail;
   const event = new Event(type, {
-    bubbles: options.bubbles === undefined ? true : options.bubbles,
-    cancelable: Boolean(options.cancelable),
-    composed: options.composed === undefined ? true : options.composed,
+    bubbles: true,
+    cancelable: false,
+    composed: true,
   });
   event.detail = detail;
   node.dispatchEvent(event);
