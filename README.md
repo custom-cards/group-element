@@ -4,12 +4,99 @@ An element to group other elements in [Home Assistant](https://github.com/home-a
 
 Perfect for creating dynamic interfaces while reusing UI real-estate.
 
-// todo: video
+[![Group demo](http://github.com/yosilevy/group-element/docs/Group1.png)](https://youtu.be/cGAN1YqO9hY)
 
+## Using the card
+
+There are many possibe usages to the group element (samples follow below)
+1. Build a cleaner user interface by showing relevant controls only when a hot spot is tapped. For example: tap your cover/blinds and show the controls; tap your dimmer and show its controls; 
+No more clogged UIs or living without full control due to space contraints.
+2. Easier positioining - all group children elements position and size are based on % of the group element itself. So if you have a certain element or a set of elements that you reuse you can position them once relative to each other and then move the entire group.
+3. Build a dynamic UI - for example a universal remote control (TV/Receiver/STB) taking up very little space. You can combine group-element with group-toggle-button (coming soon).
+4. Eliminates the need to define input_boolean entities just to toggle visibility of UI items. Also gives you freedom to use the interactive interface by multiple users without conflicts of a shared input_boolean entity.
+
+#### Element options
+| Name | Type | Default | Since | Description |
+|------|------|---------|-------|-------------|
+| type | string | **required** | v0.1 | `custom:group-element`
+| elements | list | **required** | v0.1 | Elements contained in the group. Any valid element hierarchy of picture-elements.
+| toggle_tap | boolean | false | v0.1 | Enable toggling visibility of children elements when tapped.
+| visible | boolean | true | v0.1 | Sets initial visibility.
+| grouping_code | numeric | -1 | v0.1 | Sets a code that controls which groups are mutually exclusive. Only a single group with the same code may be shown at once (only works within the same level)
+
+#### Elements position options (elements_pos)
+
+Sets the position for the elements to allow separation between hot spot for toggle tap and elements display.
+All positions are relative to the group parent and not to the group.
+
+| Name | Type | Default | Since | Description |
+|------|------|---------|-------|-------------|
+| left/right | string | | v0.1 | Sets the left position of the element container.
+| top | string | | v0.1 | Sets the top position of the element container.
+| width | string | | v0.1 | Sets the width position of the element container.
+| height | string | | Sets the height position of the element container.
+| any other style | string | | v0.1 | Sets additional style properties on the element container.
+
+#### Close_button object (close_button)
+
+Optional button that hides the group
+
+| Name | Type | Default | Since | Description |
+|------|------|---------|-------|-------------|
+| show | boolean | false | v0.1 | Show the close button to enable closing the group (regardless of toggle_tap).
+| icon | string | hass:close | v0.1 | Sets the icon to show on the close button.
+
+#### Style object (style)
+
+Optional styles for the close button
+
+| Name | Type | Default | Since | Description |
+|------|------|---------|-------|-------------|
+| left/right | string |  | v0.1 | Sets the left position of the close button (CSS).
+| top | string | | v0.1 | Sets the top position of the close button (CSS).
+| any other style | string | | v0.1 | Sets additional style properties on the close button.
+
+### Example usage
+
+#### Basic setup
+Group controls in a group that is initially hidden and shows when tapped
+
+//todo: update image
+<img src="https://user-images.githubusercontent.com/457678/52081816-771c1b00-259b-11e9-8c1e-cfd93ac3e66d.png" width="500px" alt="Basic card example" />
+
+```yaml
+- type: picture-elements
+  image: /local/living-room.jpg
+  elements:
+    type: 'custom:group-element'
+    toggle_tap: true
+    visible: false
+    style:
+      height: 40%
+      left: 41%
+      top: 30%
+      width: 25%
+    - elements:
+        # your elements go here - their % size/position is inside the group
+```
+
+#### Compact card
+Setting either `volume` and/or `controls` to `true` in the `hide` option object will render the player as a single row.
+
+<img src="https://user-images.githubusercontent.com/457678/53042774-569efc80-3487-11e9-8242-03d388d40c34.png" width="500px" alt="Compact card example" />
+
+```yaml
+- type: custom:mini-media-player
+  entity: media_player.example
+  icon: mdi:spotify
+  artwork: cover
+  hide:
+    volume: true
+    source: true
+    power_state: false
+```
 
 ## Install
-
-**Please note - you should place this file at the very end of the resources section since as it may contain other custom elements they should be loaded prior to the group element.**
 
 ### Simple install
 
@@ -68,219 +155,6 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
   ```
 
 *You may need to empty the browsers cache if you have problems loading the updated card.*
-
-## Using the card
-
-There are many possibe usages to the group element (samples follow below)
-1. Build a cleaner user interface by showing relevant controls only when a hot spot is tapped. For example: tap your cover/blinds and show the controls; tap your dimmer and show its controls;
-No more clogged UIs or living without full control due to space contraints.
-2. Easier positioining - all group children elements position and size are based on % of the group element itself. So if you have a certain element or a set of elements that you reuse you can position them once relative to each other and then move the entire group.
-3. Build a dynamic UI - for example a universal remote control taking up very little space. You can combine group-element with group-toggle-button.
-4. Eliminates the need to define input_boolean entities just to toggle visibility of UI items. Also gives you freedom to use the interactive interface by multiple users without conflicts of a shared input_boolean entity.
-
-#### Card options
-| Name | Type | Default | Since | Description |
-|------|------|---------|-------|-------------|
-| type | string | **required** | v0.1 | `custom:group-element`
-| elements | list | **required** | v0.1 | Elements contained in the group. Any valid element hierarchy of picture-elements.
-| toggle_tap | boolean | false | v0.1 | Enable toggling visibility of children elements when tapped.
-| visible | boolean | false | v0.1 | Sets initial visibility.
-
-#### Close_button object
-| Name | Type | Default | Since | Description |
-|------|------|---------|-------|-------------|
-| show | boolean | false | v0.1 | Show the close button to enable closing the group (regardless of toggle_tap).
-| icon | string | hass:close | v0.1 | Sets the icon to show on the close button.
-| left | string | calc(100% - 11px) | v0.1 | Sets the left position of the close button (CSS).
-| top | string | calc(100% - 11px) | v0.1 | Sets the top position of the close button (CSS).
-
-
-Note: you may style the icon by using the following style variables: --close-button-color
-
-### Example usage
-
-#### Basic setup
-Show a group that is initially hidden and shows when tapped
-
-//todo: update image
-<img src="https://user-images.githubusercontent.com/457678/52081816-771c1b00-259b-11e9-8c1e-cfd93ac3e66d.png" width="500px" alt="Basic card example" />
-
-```yaml
-- type: picture-elements
-  image: /local/living-room.jpg
-  elements:
-    type: 'custom:group-element'
-    toggle_tap: true
-    visible: false
-    style:
-      height: 40%
-      left: 41%
-      top: 30%
-      width: 25%
-    - elements:
-        # your other elements go here
-```
-
-#### Compact card
-Setting either `volume` and/or `controls` to `true` in the `hide` option object will render the player as a single row.
-
-<img src="https://user-images.githubusercontent.com/457678/53042774-569efc80-3487-11e9-8242-03d388d40c34.png" width="500px" alt="Compact card example" />
-
-```yaml
-- type: custom:mini-media-player
-  entity: media_player.example
-  icon: mdi:spotify
-  artwork: cover
-  hide:
-    volume: true
-    source: true
-    power_state: false
-```
-
-#### Card with media shortcuts
-You can specify media shortcuts through the `shortcuts` option, either as a list or as buttons or why not both?
-
-<img src="https://user-images.githubusercontent.com/457678/53040712-5e0fd700-3482-11e9-9990-6ca13b871f50.png" width="500px" alt="Card with media shortcuts example">
-
-```yaml
-- entity: media_player.spotify
-  type: custom:mini-media-player
-  artwork: cover
-  source: icon
-  hide:
-    volume: true
-  shortcuts:
-    columns: 4 # Max buttons per row
-    buttons:
-      # Start predefined playlist
-      - icon: mdi:cat
-        type: playlist
-        id: spotify:user:spotify:playlist:37i9dQZF1DZ06evO2O09Hg
-      # Change the source to bathroom
-      - icon: mdi:dog
-        type: source
-        id: Bathroom
-      # Trigger script
-      - icon: mdi:dog
-        type: script
-        id: script.script_name
-      ... # etc.
-```
-
-#### Grouped cards
-Set the `group` option to `true` when nesting mini media player cards inside other cards that already have margins/paddings.
-
-<img src="https://user-images.githubusercontent.com/457678/52081831-800cec80-259b-11e9-9b35-63b23805c879.png" width="500px" alt="Grouped cards example" />
-
-```yaml
-- type: entities
-  entities:
-    - type: custom:mini-media-player
-      entity: media_player.multiroom_player
-      group: true
-      source: icon
-      info: short
-      hide:
-        volume: true
-        power: true
-    - type: custom:mini-media-player
-      entity: media_player.kitchen_speakers
-      group: true
-      hide:
-        controls: true
-    - type: custom:mini-media-player
-      entity: media_player.bathroom_speakers
-      group: true
-      hide:
-        controls: true
-    - type: custom:mini-media-player
-      entity: media_player.bedroom_speakers
-      group: true
-      hide:
-        controls: true
-    - type: custom:mini-media-player
-      entity: media_player.patio_speakers
-      group: true
-      hide:
-        controls: true
-```
-
-#### Stacked cards
-By using vertical and horizontal stacks, you can achieve many different setups.
-
-<img src="https://user-images.githubusercontent.com/457678/52081830-800cec80-259b-11e9-9a77-0e8585c3f71c.png" width="500px" alt="Stacked cards example" />
-
-```yaml
-- type: horizontal-stack
-  cards:
-    - entity: media_player.tv_livingroom
-      type: custom:mini-media-player
-      info: short
-      artwork: cover
-      hide:
-        mute: true
-        icon: true
-        power_state: false
-    - entity: media_player.tv_bedroom
-      type: custom:mini-media-player
-      info: short
-      artwork: cover
-      hide:
-        mute: true
-        icon: true
-        power_state: false
-- type: horizontal-stack
-  cards:
-    - entity: media_player.cc_patio
-      type: custom:mini-media-player
-      hide:
-        icon: true
-    - entity: media_player.cc_kitchen
-      type: custom:mini-media-player
-      hide:
-        icon: true
-    - entity: media_player.cc_bath
-      type: custom:mini-media-player
-      hide:
-        icon: true
-```
-
-#### Speaker_group management
-Specify all your speaker entities in a list under the option `speaker_group` -> `entities`. They obviously need to be of the same platform.
-
-* The card does only allow changes to be made to groups where the entity of the card is the coordinator/master speaker.
-* Checking a speakers in the list will make it join the group of the card entity. (*`media_player.sonos_office`* in the example below).
-* Unchecking a speaker in the list will remove it from any group it's a part of.
-
-<img src="https://user-images.githubusercontent.com/457678/52181170-53511300-27ef-11e9-9d54-aa9c84a96168.gif" width="500px" alt="sonos group management example">
-
-```yaml
-- type: custom:mini-media-player
-  entity: media_player.sonos_office
-  hide:
-    power: true
-    icon: true
-    source: true
-  speaker_group:
-    platform: sonos
-    show_group_count: true
-    entities:
-      - entity_id: media_player.sonos_office
-        name: Sonos Office
-      - entity_id: media_player.sonos_livingroom
-        name: Sonos Livingroom
-      - entity_id: media_player.sonos_kitchen
-        name: Sonos Kitchen
-      - entity_id: media_player.sonos_bathroom
-        name: Sonos Bathroom
-      - entity_id: media_player.sonos_bedroom
-        name: Sonos Bedroom
-```
-
-If you are planning to use the `speaker_group` option in several cards, creating a separate yaml file for the list is highly recommended, this will result in a less cluttered `ui-lovelace.yaml` and also make the list easier to manage and maintain.
-You then simply reference the file containing the list using `entities: !include filename.yaml` for every occurrence of `entities` in your `ui-lovelace.yaml`.
-
-This is however only possible when you have lovelace mode set to yaml in your HA configuration, see [Lovelace YAML mode](https://www.home-assistant.io/lovelace/yaml-mode/) for more info.
 
 ## Getting errors?
 Make sure you have `javascript_version: latest` in your `configuration.yaml` under `frontend:`.

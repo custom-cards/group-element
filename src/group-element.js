@@ -8,9 +8,10 @@ customElements.define(
       this._hass = {};
       this._config = {};
       this._elements = [];
-      this._visible = false;
+      this._visible = true;
       this._toggleTap = false;
-      this._groupingId = -1;
+      this._container = undefined;
+      this._groupingCode = -1;
 
       this.addEventListener("click", (ev) => {
         if (ev.target !== this) {
@@ -47,9 +48,9 @@ customElements.define(
         this._toggleTap = config.toggle_tap;
       }
 
-      if (config.grouping_id !== undefined) {
-        this._groupingId = config.grouping_id;
-        this.attributes.groupingId = config.grouping_id;
+      if (config.grouping_code !== undefined) {
+        this._groupingCode = config.grouping_code;
+        this.attributes.groupingCode = config.grouping_code;
       }
 
       this.updateElements();
@@ -68,6 +69,10 @@ customElements.define(
       this.updateElements();
     }
 
+    disconnectedCallback() {
+      this.removeAllElements();
+    }
+
     updateElements() {
       if (!this._hass || !this._config || !this.parentElement) {
         return;
@@ -80,6 +85,12 @@ customElements.define(
           this._elements.push(element);
         });
 
+        if (this._config.elements_pos !== undefined) {
+          this._container = this.createElementsContainer(
+            this._config.elements_pos
+          );
+        }
+
         if (
           this._config.close_button !== undefined &&
           this._config.close_button.show
@@ -90,16 +101,47 @@ customElements.define(
         }
       }
 
+      const container = this._container ? this._container : this;
+
+      if (container !== this) {
+        if (this._visible) {
+          if (!this._container.parentElement) {
+            // append the element container to the group's parent for same level positioning
+            this.parentElement.appendChild(this._container);
+          }
+        } else if (this._container.parentElement) {
+          this._container.parentElement.removeChild(this._container);
+        }
+      }
+
       this._elements.map((el) => {
         if (this._visible) {
           el.hass = this._hass;
           if (!el.parentElement) {
-            this.appendChild(el);
+            container.appendChild(el);
           }
         } else if (el.parentElement) {
           el.parentElement.removeChild(el);
         }
       });
+    }
+
+    removeAllElements() {
+      if (this._container) {
+        if (this._container.parentElement) {
+          this._container.parentElement.removeChild(this._container);
+        }
+
+        this._container = undefined;
+      }
+
+      this._elements.map((el) => {
+        if (el.parentElement) {
+          el.parentElement.removeChild(el);
+        }
+      });
+
+      this._elements = [];
     }
 
     toggleVisibility() {
@@ -111,12 +153,12 @@ customElements.define(
 
       this.updateElements();
 
-      if (this._visible && this._groupingId !== -1) {
+      if (this._visible && this._groupingCode !== -1) {
         this.parentElement.querySelectorAll("group-element").forEach((el) => {
           if (
             el !== this &&
-            el.attributes.groupingId !== undefined &&
-            el.attributes.groupingId === this._groupingId
+            el.attributes.groupingCode !== undefined &&
+            el.attributes.groupingCode === this._groupingCode
           ) {
             if (el._visible) {
               el.toggleVisibility();
@@ -126,22 +168,33 @@ customElements.define(
       }
     }
 
-    createCloseButton(buttonConfig) {
-      const left =
-        buttonConfig.left !== undefined
-          ? buttonConfig.left
-          : "calc(100% - 11px)";
-      const top =
-        buttonConfig.top !== undefined ? buttonConfig.top : "calc(100% - 11px)";
+    createElementsContainer(elementsPosConfig) {
+      const element = document.createElement("div");
 
+      element.className = "element";
+
+      Object.keys(elementsPosConfig).forEach((prop) => {
+        element.style.setProperty(prop, elementsPosConfig[prop]);
+      });
+
+      return element;
+    }
+
+    createCloseButton(buttonConfig) {
       const element = document.createElement("ha-icon");
+
+      element.group = this;
 
       element.icon =
         buttonConfig.icon !== undefined ? buttonConfig.icon : "hass:close";
 
       element.className = "element";
-      element.style.left = left;
-      element.style.top = top;
+
+      if (buttonConfig.style) {
+        Object.keys(buttonConfig.style).forEach((prop) => {
+          element.style.setProperty(prop, buttonConfig.style[prop]);
+        });
+      }
 
       element.addEventListener("click", (ev) => {
         if (ev.target !== element) {
@@ -149,7 +202,9 @@ customElements.define(
           return;
         }
 
-        this.toggleVisibility();
+        if (element.group) {
+          element.group.toggleVisibility();
+        }
       });
 
       return element;
