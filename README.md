@@ -4,7 +4,7 @@ An element to group other elements in [Home Assistant](https://github.com/home-a
 
 Perfect for creating dynamic interfaces while reusing UI real-estate.
 
-[![Group demo](http://github.com/yosilevy/group-element/docs/Group1.png)](https://youtu.be/cGAN1YqO9hY)
+[![Group demo](http://github.com/yosilevy/group-element/docs/Group1.gif)](https://youtu.be/cGAN1YqO9hY)
 
 ## Using the card
 
