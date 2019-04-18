@@ -6,7 +6,7 @@ Perfect for creating dynamic interfaces while reusing UI real-estate.
 
 [![Group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true)](https://youtu.be/cGAN1YqO9hY)
 
-## Using the card
+## Using the element
 
 There are many possibe usages to the group element (samples follow below)
 1. Build a cleaner user interface by showing relevant controls only when a hot spot is tapped. For example: tap your cover/blinds and show the controls; tap your dimmer and show its controls; 
@@ -26,12 +26,12 @@ No more clogged UIs or living without full control due to space contraints.
 
 #### Elements position options (elements_pos)
 
-Sets the position for the elements to allow separation between hot spot for toggle tap and elements display.
-All positions are relative to the group parent and not to the group.
+If you want to separate the toggle area from the area that hosts the elements, use this object to set the position for the elements.
+Note: **All coordinates in this object are relative to the group parent and not to the group.**
 
 | Name | Type | Default | Since | Description |
 |------|------|---------|-------|-------------|
-| left/right | string | | v0.1 | Sets the left position of the element container.
+| left/right | string | | v0.1 | Sets the left/right position of the element container.
 | top | string | | v0.1 | Sets the top position of the element container.
 | width | string | | v0.1 | Sets the width position of the element container.
 | height | string | | Sets the height position of the element container.
@@ -39,7 +39,7 @@ All positions are relative to the group parent and not to the group.
 
 #### Close_button object (close_button)
 
-Optional button that hides the group
+Optional button that hides the group on click in addition to tapping the group itself if toggle_tap is on
 
 | Name | Type | Default | Since | Description |
 |------|------|---------|-------|-------------|
@@ -50,6 +50,8 @@ Optional button that hides the group
 
 Optional styles for the close button
 
+You should position (and otherwise manipulate) the close button
+
 | Name | Type | Default | Since | Description |
 |------|------|---------|-------|-------------|
 | left/right | string |  | v0.1 | Sets the left position of the close button (CSS).
@@ -59,10 +61,9 @@ Optional styles for the close button
 ### Example usage
 
 #### Basic setup
-Group controls in a group that is initially hidden and shows when tapped
+Group controls in a group that is initially hidden and shows when tapped. All elements are within the group.
 
-//todo: update image
-<img src="https://user-images.githubusercontent.com/457678/52081816-771c1b00-259b-11e9-8c1e-cfd93ac3e66d.png" width="500px" alt="Basic card example" />
+[![Basic group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true)](https://youtu.be/koFOMzLKpEo)
 
 ```yaml
 - type: picture-elements
@@ -73,27 +74,169 @@ Group controls in a group that is initially hidden and shows when tapped
     visible: false
     style:
       height: 40%
-      left: 41%
+      left: 67%
       top: 30%
       width: 25%
     - elements:
-        # your elements go here - their % size/position is inside the group
+      # your elements go here - their size/position is relative to the group
 ```
 
-#### Compact card
-Setting either `volume` and/or `controls` to `true` in the `hide` option object will render the player as a single row.
+#### Elements shown outside of hot spot (toggle area)
 
-<img src="https://user-images.githubusercontent.com/457678/53042774-569efc80-3487-11e9-8242-03d388d40c34.png" width="500px" alt="Compact card example" />
+To show elements outside of the group area use the elements_pos object. This allows you to define a hot spot (in the group's location) separate to the elements shown when the hot spot is tapped.
+
+[![Elements_pos group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group3.gif?raw=true)](https://youtu.be/4UFbfI1k8r4)
 
 ```yaml
-- type: custom:mini-media-player
-  entity: media_player.example
-  icon: mdi:spotify
-  artwork: cover
-  hide:
-    volume: true
-    source: true
-    power_state: false
+- type: picture-elements
+  image: /local/living-room.jpg
+  elements:
+    - type: 'custom:group-element'
+      visible: false
+      toggle_tap: true
+      style:
+        # the group style determines the hotspot
+        height: 40%
+        left: 41%
+        top: 30%
+        width: 25%
+      elements:
+        # your elements go here - their size/position is relative to the group
+      elements_pos:
+        # the elements_pos style determine the location of the elements
+        left: 10%
+        top: 65%
+        width: 80%
+        height: 30%
+        transform: none
+        background-color: 'rgba(255, 255, 255, 0.6)'
+        border-radius: 10px
+```
+
+#### Close button
+
+You can hide the group by clicking a close button you can add and position
+
+[![Close button group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group4.gif?raw=true)](https://youtu.be/bCJw8mR61Pg)
+
+```yaml
+- type: picture-elements
+  image: /local/living-room.jpg
+  elements:
+    - type: 'custom:group-element'
+      visible: false
+      toggle_tap: true
+      style:
+        # the group style determines the hotspot
+        height: 40%
+        left: 41%
+        top: 30%
+        width: 25%
+      elements:
+        # your elements go here - their size/position is relative to the group
+      elements_pos:
+        # the elements_pos style determine the location of the elements
+        left: 10%
+        top: 65%
+        width: 80%
+        height: 30%
+        transform: none
+        background-color: 'rgba(255, 255, 255, 0.6)'
+        border-radius: 10px
+      close_button:
+        # the close button determines the location of the close button
+        show: true
+        style:
+          background-color: 'rgba(255, 255, 255, 0.6)'
+          border-color: black
+          border-radius: 10px
+          border-style: solid
+          left: 1%
+          top: 69%
+          transform: none
+```
+
+#### Grouping
+
+When you have multiple groups that may reuse the same real estate it makes sense for one of them to hide all others when it is visible.
+To do this, set the grouping_code to the same number on all groups that should share the real estate.
+
+[![Group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true)](https://youtu.be/cGAN1YqO9hY)
+
+```yaml
+- type: picture-elements
+  image: /local/living-room.jpg
+  elements:
+    # first group - with grouping_code of 1
+    - type: 'custom:group-element'
+      visible: false
+      toggle_tap: true
+      grouping_code: 1
+      style:
+        # the group style determines the hotspot
+        height: 40%
+        left: 41%
+        top: 30%
+        width: 25%
+      elements:
+        # your elements go here - their size/position is relative to the group
+      elements_pos:
+        # the elements_pos style determine the location of the elements
+        left: 10%
+        top: 65%
+        width: 80%
+        height: 30%
+        transform: none
+        background-color: 'rgba(255, 255, 255, 0.6)'
+        border-radius: 10px
+      close_button:
+        # the close button determines the location of the close button
+        show: true
+        style:
+          background-color: 'rgba(255, 255, 255, 0.6)'
+          border-color: black
+          border-radius: 10px
+          border-style: solid
+          left: 1%
+          top: 69%
+          transform: none
+
+    # second group - also with grouping_code of 1
+    # second group's element_pos & close_button is identical to group 1 and they share the 
+    # same real-estate so they need to not be shown together
+    - type: 'custom:group-element'
+      visible: false
+      toggle_tap: true
+      grouping_code: 1
+      style:
+        # the group style determines the hotspot
+        height: 40%
+        left: 68%
+        top: 30%
+        width: 25%
+      elements:
+        # your elements go here - their size/position is relative to the group
+      elements_pos:
+        # the elements_pos style determine the location of the elements
+        left: 10%
+        top: 65%
+        width: 80%
+        height: 30%
+        transform: none
+        background-color: 'rgba(255, 255, 255, 0.6)'
+        border-radius: 10px
+      close_button:
+        # the close button determines the location of the close button
+        show: true
+        style:
+          background-color: 'rgba(255, 255, 255, 0.6)'
+          border-color: black
+          border-radius: 10px
+          border-style: solid
+          left: 1%
+          top: 69%
+          transform: none
+
 ```
 
 ## Install
