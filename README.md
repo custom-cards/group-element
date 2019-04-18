@@ -63,7 +63,7 @@ You should position (and otherwise manipulate) the close button
 #### Basic setup
 Group controls in a group that is initially hidden and shows when tapped. All elements are within the group.
 
-<img src="https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true" width="360">
+<img src="https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true" width="360" height="273">
 [![Basic group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true =360X273)](https://youtu.be/koFOMzLKpEo)
 
 ```yaml
