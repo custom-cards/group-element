@@ -4,6 +4,10 @@ An element to group other elements in [Home Assistant](https://github.com/home-a
 
 Perfect for creating dynamic interfaces while reusing UI real-estate.
 
+Turn this:
+<img src="https://github.com/yosilevy/group-element/blob/master/docs/Before.jpg?raw=true" width="360" height="273"></a>
+
+In to this:
 <a href="https://youtu.be/cGAN1YqO9hY"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true" width="360" height="273"></a>
 
 ## Using the element
