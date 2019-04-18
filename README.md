@@ -263,7 +263,7 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
 2. Grab `group-element-bundle.js`
 
   ```console
-  $ wget https://github.com/yosilevy/group-element/releases/download/v0.1.0/group-element-bundle.js
+  $ wget https://github.com/yosilevy/group-element/releases/download/0.1.0/group-element-bundle.js
   ```
 
 3. Add a reference to `group-element-bundle.js` inside your `ui-lovelace.yaml`.
