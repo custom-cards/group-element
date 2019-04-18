@@ -316,5 +316,8 @@ resources:
     type: js
 ```
 
+## Known issues
+If you use elements_pos then it is inserted dynamically in to the DOM and so it is shown above other elements. Normally should not be an issue.
+
 ## License
 This project is under the Apache 2.0 license.
