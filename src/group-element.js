@@ -80,7 +80,10 @@ customElements.define(
 
       if (this._elements.length === 0) {
         this._config.elements.map((elementConfig) => {
-          const element = createStyledHuiElement(elementConfig);
+          const element = createStyledHuiElement(
+            elementConfig,
+            this.parentElement
+          );
 
           this._elements.push(element);
         });

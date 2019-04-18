@@ -1,7 +1,7 @@
 import { createHuiElement } from "./createHuiElement";
 
-export function createStyledHuiElement(elementConfig) {
-  const element = createHuiElement(elementConfig);
+export function createStyledHuiElement(elementConfig, eventTarget) {
+  const element = createHuiElement(elementConfig, eventTarget);
   // keep conditional card as a transparent container so let its position remain static
   if (element.tagName !== "HUI-CONDITIONAL-ELEMENT") {
     element.classList.add("element");

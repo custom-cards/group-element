@@ -4,7 +4,7 @@ import { fireEvent } from "./fireEvent";
 const CUSTOM_TYPE_PREFIX = "custom:";
 const TIMEOUT = 2000;
 
-export const createHuiElement = (config) => {
+export const createHuiElement = (config, eventTarget) => {
   if (!config || typeof config !== "object" || !config.type) {
     return _createErrorElement("No element type configured.", config);
   }
@@ -23,7 +23,9 @@ export const createHuiElement = (config) => {
 
     customElements.whenDefined(tag).then(() => {
       clearTimeout(timer);
-      fireEvent(element.parentElement.parentElement, "ll-rebuild");
+      if (eventTarget) {
+        fireEvent(eventTarget, "ll-rebuild");
+      }
     });
 
     return element;

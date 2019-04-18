@@ -43,7 +43,7 @@
     const CUSTOM_TYPE_PREFIX = "custom:";
     const TIMEOUT = 2000;
 
-    const createHuiElement = config => {
+    const createHuiElement = (config, eventTarget) => {
       if (!config || typeof config !== "object" || !config.type) {
         return _createErrorElement("No element type configured.", config);
       }
@@ -61,7 +61,10 @@
 
         customElements.whenDefined(tag).then(() => {
           clearTimeout(timer);
-          fireEvent(element.parentElement.parentElement, "ll-rebuild");
+
+          if (eventTarget) {
+            fireEvent(eventTarget, "ll-rebuild");
+          }
         });
         return element;
       }
@@ -98,8 +101,8 @@
       }, TIMEOUT);
     }
 
-    function createStyledHuiElement(elementConfig) {
-      const element = createHuiElement(elementConfig);
+    function createStyledHuiElement(elementConfig, eventTarget) {
+      const element = createHuiElement(elementConfig, eventTarget);
 
       if (element.tagName !== "HUI-CONDITIONAL-ELEMENT") {
         element.classList.add("element");
@@ -188,7 +191,7 @@
 
         if (this._elements.length === 0) {
           this._config.elements.map(elementConfig => {
-            const element = createStyledHuiElement(elementConfig);
+            const element = createStyledHuiElement(elementConfig, this.parentElement);
 
             this._elements.push(element);
           });
