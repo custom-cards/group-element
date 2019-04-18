@@ -4,7 +4,7 @@ An element to group other elements in [Home Assistant](https://github.com/home-a
 
 Perfect for creating dynamic interfaces while reusing UI real-estate.
 
-[![Group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true =360X273)](https://youtu.be/cGAN1YqO9hY)
+<a href="https://youtu.be/cGAN1YqO9hY"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true" width="360" height="273"></a>
 
 ## Using the element
 
@@ -64,7 +64,6 @@ You should position (and otherwise manipulate) the close button
 Group controls in a group that is initially hidden and shows when tapped. All elements are within the group.
 
 <a href="https://youtu.be/koFOMzLKpEo"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true" width="360" height="273"></a>
-[![Basic group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true =360X273)](https://youtu.be/koFOMzLKpEo)
 
 ```yaml
 - type: picture-elements
@@ -86,7 +85,7 @@ Group controls in a group that is initially hidden and shows when tapped. All el
 
 To show elements outside of the group area use the elements_pos object. This allows you to define a hot spot (in the group's location) separate to the elements shown when the hot spot is tapped.
 
-[![Elements_pos group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group3.gif?raw=true =360X273)](https://youtu.be/4UFbfI1k8r4)
+<a href="https://youtu.be/4UFbfI1k8r4"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group3.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
@@ -118,7 +117,7 @@ To show elements outside of the group area use the elements_pos object. This all
 
 You can hide the group by clicking a close button you can add and position
 
-[![Close button group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group4.gif?raw=true =360X273)](https://youtu.be/bCJw8mR61Pg)
+<a href="https://youtu.be/bCJw8mR61Pg"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group4.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
@@ -162,7 +161,7 @@ You can hide the group by clicking a close button you can add and position
 When you have multiple groups that may reuse the same real estate it makes sense for one of them to hide all others when it is visible.
 To do this, set the grouping_code to the same number on all groups that should share the real estate.
 
-[![Group demo](https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true =360X273)](https://youtu.be/cGAN1YqO9hY)
+<a href="https://youtu.be/cGAN1YqO9hY"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
