@@ -24,7 +24,7 @@ No more clogged UIs or living without full control due to space contraints.
 | elements | list | **required** | v0.1 | Elements contained in the group. Any valid element hierarchy of picture-elements.
 | toggle_tap | boolean | false | v0.1 | Enable toggling visibility of children elements when tapped.
 | visible | boolean | true | v0.1 | Sets initial visibility.
-| grouping_code | numeric | -1 | v0.1 | Sets a code that controls which groups are mutually exclusive. Only a single group with the same code may be shown at once (only works within the same level)
+| grouping_code | numeric | -1 | v0.1 | When using multiple group-element based groups this allows to specify that only a single group with the same grouping code should be shown. All other groups sharing the same grouping_code are automatically hidden. (only works within the same level)
 
 #### Elements position options (elements_pos)
 
@@ -160,7 +160,7 @@ You can hide the group by clicking a close button you can add and position
 
 #### Grouping
 
-When you have multiple groups that may reuse the same real estate it makes sense for one of them to hide all others when it is visible.
+When you have multiple groups (group-element) that may reuse the same real estate it makes sense for one of them to hide all others when it is visible.
 To do this, set the grouping_code to the same number on all groups that should share the real estate.
 
 <a href="https://youtu.be/cGAN1YqO9hY"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true" width="360" height="273"></a>
