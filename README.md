@@ -6,7 +6,7 @@ Perfect for creating dynamic interfaces while reusing UI real-estate.
 
 | Turn this: | In to this (adding TV & dimmer controls since there's more room now) |
 |------|------|
-| <img src="https://github.com/yosilevy/group-element/blob/master/docs/Before.jpg?raw=true" width="360" height="273"></a> | <a href="https://youtu.be/1lgNFSjI4cA"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group-full-demo.gif?raw=true" width="360" height="273"></a>
+| <img src="https://github.com/custom-cards/group-element/blob/master/docs/Before.jpg?raw=true" width="360" height="273"></a> | <a href="https://youtu.be/1lgNFSjI4cA"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group-full-demo.gif?raw=true" width="360" height="273"></a>
 
 ## Using the element
 
@@ -65,7 +65,7 @@ You should position (and otherwise manipulate) the close button
 #### Basic setup
 Group controls in a group that is initially hidden and shows when tapped. All elements are within the group.
 
-<a href="https://youtu.be/koFOMzLKpEo"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group2.gif?raw=true" width="360" height="273"></a>
+<a href="https://youtu.be/koFOMzLKpEo"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group2.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
@@ -87,7 +87,7 @@ Group controls in a group that is initially hidden and shows when tapped. All el
 
 To show elements outside of the group area use the elements_pos object. This allows you to define a hot spot (in the group's location) separate to the elements shown when the hot spot is tapped.
 
-<a href="https://youtu.be/4UFbfI1k8r4"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group3.gif?raw=true" width="360" height="273"></a>
+<a href="https://youtu.be/4UFbfI1k8r4"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group3.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
@@ -119,7 +119,7 @@ To show elements outside of the group area use the elements_pos object. This all
 
 You can hide the group by clicking a close button you can add and position
 
-<a href="https://youtu.be/bCJw8mR61Pg"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group4.gif?raw=true" width="360" height="273"></a>
+<a href="https://youtu.be/bCJw8mR61Pg"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group4.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
@@ -163,7 +163,7 @@ You can hide the group by clicking a close button you can add and position
 When you have multiple groups (group-element) that may reuse the same real estate it makes sense for one of them to hide all others when it is visible.
 To do this, set the grouping_code to the same number on all groups that should share the real estate.
 
-<a href="https://youtu.be/cGAN1YqO9hY"><img src="https://github.com/yosilevy/group-element/blob/master/docs/Group1.gif?raw=true" width="360" height="273"></a>
+<a href="https://youtu.be/cGAN1YqO9hY"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group1.gif?raw=true" width="360" height="273"></a>
 
 ```yaml
 - type: picture-elements
@@ -245,7 +245,7 @@ To do this, set the grouping_code to the same number on all groups that should s
 
 ### Simple install
 
-1. Download and copy `group-element-bundle.js` from the [latest release](https://github.com/yosilevy/group-element/releases/latest) into your `config/www` directory.
+1. Download and copy `group-element-bundle.js` from the [latest release](https://github.com/custom-cards/group-element/releases/latest) into your `config/www` directory.
 
 2. Add a reference to `group-element-bundle.js` in lovelace.
 
@@ -263,7 +263,7 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
 2. Grab `group-element-bundle.js`
 
   ```console
-  $ wget https://github.com/yosilevy/group-element/releases/download/0.1.0/group-element-bundle.js
+  $ wget https://github.com/custom-cards/group-element/releases/download/0.1.0/group-element-bundle.js
   ```
 
 3. Add a reference to `group-element-bundle.js` inside your `ui-lovelace.yaml`.
@@ -283,7 +283,7 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
   ```yaml
   custom_updater:
     card_urls:
-      - https://raw.githubusercontent.com/yosilevy/group-element/master/tracker.json
+      - https://raw.githubusercontent.com/custom-cards/group-element/master/tracker.json
   ```
 
 ## Updating
