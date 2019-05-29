@@ -8,17 +8,25 @@ customElements.define(
       this._hass = {};
       this._config = {};
       this._elements = [];
+      this._toggleAreaElements = [];
       this._visible = true;
       this._toggleTap = false;
+      this._noToggleHide = false;
       this._container = undefined;
-      this._groupingCode = -1;
+      this.fullyHideOtherGroupsOnShow = undefined;
 
       this.addEventListener("click", (ev) => {
-        if (ev.target !== this) {
+        // if click is on internal element and there are no elements in toggle area user asked to show - get out
+        // if there are - handle tap/toggle visibility
+        if (ev.target !== this && this._toggleAreaElements.length === 0) {
           ev.stopPropagation();
           return;
         }
-        this.toggleVisibility();
+        this.toggleVisibility(
+          true,
+          this.fullyHideOtherGroupsOnShow !== undefined &&
+            this.fullyHideOtherGroupsOnShow
+        );
       });
     }
 
@@ -37,6 +45,16 @@ customElements.define(
         this._elements = [];
       }
 
+      if (this._toggleAreaElements.length > 0) {
+        this._toggleAreaElements.map((el) => {
+          if (el.parentElement) {
+            el.parentElement.removeChild(el);
+          }
+        });
+
+        this._toggleAreaElements = [];
+      }
+
       this._config = config;
 
       this.style.transform = "none";
@@ -48,9 +66,37 @@ customElements.define(
         this._toggleTap = config.toggle_tap;
       }
 
+      if (config.no_toggle_hide !== undefined) {
+        this._noToggleHide = config.no_toggle_hide;
+      }
+
       if (config.grouping_code !== undefined) {
-        this._groupingCode = config.grouping_code;
         this.attributes.groupingCode = config.grouping_code;
+      }
+
+      if (config.fully_hide_other_groups_on_show !== undefined) {
+        this.fullyHideOtherGroupsOnShow =
+          config.fully_hide_other_groups_on_show;
+      }
+
+      if (config.visible_style) {
+        var dynamicStyle = "";
+        Object.keys(config.visible_style).forEach((prop) => {
+          dynamicStyle +=
+            prop + ": " + config.visible_style[prop] + " !important;\n";
+        });
+
+        const visibleStyleNode = document.createElement("style");
+        visibleStyleNode.innerHTML =
+          `
+          .visibleOn {
+           ` +
+          dynamicStyle +
+          `
+          }
+        `;
+
+        this.appendChild(visibleStyleNode);
       }
 
       this.updateElements();
@@ -62,7 +108,7 @@ customElements.define(
       this.updateElements();
     }
 
-    // required since otherwise if child custom elements are loaded later even fired (ll-rebuild) will not be handled
+    // required since otherwise if child custom elements are loaded later then event fired (ll-rebuild) will not be handled
     // because this element does not yet have a parent. If this is ever added as a non custom element remove this + remove also: || !this.parentElement) {
     // from updateElements
     connectedCallback() {
@@ -104,6 +150,20 @@ customElements.define(
         }
       }
 
+      if (
+        this._config.toggle_area_elements &&
+        this._toggleAreaElements.length === 0
+      ) {
+        this._config.toggle_area_elements.map((elementConfig) => {
+          const element = createStyledHuiElement(
+            elementConfig,
+            this.parentElement
+          );
+
+          this._toggleAreaElements.push(element);
+        });
+      }
+
       const container = this._container ? this._container : this;
 
       if (container !== this) {
@@ -127,6 +187,15 @@ customElements.define(
           el.parentElement.removeChild(el);
         }
       });
+
+      this._toggleAreaElements.map((element) => {
+        if (!element.parentElement) {
+          element.hass = this._hass;
+          this.appendChild(element);
+        }
+      });
+
+      this.setVisibilityStyle(this._visible);
     }
 
     removeAllElements() {
@@ -145,10 +214,22 @@ customElements.define(
       });
 
       this._elements = [];
+
+      this._toggleAreaElements.map((el) => {
+        if (el.parentElement) {
+          el.parentElement.removeChild(el);
+        }
+      });
+
+      this._toggleAreaElements = [];
     }
 
-    toggleVisibility() {
+    toggleVisibility(userClicked, hide) {
       if (!this._toggleTap) {
+        return;
+      }
+
+      if (userClicked && this._noToggleHide && this._visible) {
         return;
       }
 
@@ -156,17 +237,25 @@ customElements.define(
 
       this.updateElements();
 
-      if (this._visible && this._groupingCode !== -1) {
+      if (this._visible && this.attributes.groupingCode) {
         this.parentElement.querySelectorAll("group-element").forEach((el) => {
           if (
             el !== this &&
             el.attributes.groupingCode !== undefined &&
-            el.attributes.groupingCode === this._groupingCode
+            el.attributes.groupingCode === this.attributes.groupingCode
           ) {
             if (el._visible) {
               el.toggleVisibility();
             }
+
+            if (hide !== undefined) {
+              el.style.display = hide ? "none" : "block";
+            }
           }
+        });
+      } else if (hide !== undefined) {
+        this.parentElement.querySelectorAll("group-element").forEach((el) => {
+          el.style.display = hide ? "none" : "block";
         });
       }
     }
@@ -206,11 +295,23 @@ customElements.define(
         }
 
         if (element.group) {
-          element.group.toggleVisibility();
+          element.group.toggleVisibility(false, false);
         }
       });
 
       return element;
+    }
+
+    setVisibilityStyle(visible) {
+      if (!this._config.visible_style) {
+        return;
+      }
+
+      if (visible) {
+        this.classList.add("visibleOn");
+      } else {
+        this.classList.remove("visibleOn");
+      }
     }
   }
 );
