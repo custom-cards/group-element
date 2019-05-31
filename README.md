@@ -255,7 +255,7 @@ To do this, set the grouping_code to the same number on all groups that should s
 
   ```yaml
   resources:
-    - url: /local/group-element-bundle.js?v=0.3.0
+    - url: /local/group-element-bundle.js?v=0.4.0
       type: module
   ```
 To do this, go to Configure UI -> Raw Config Editor and paste this under resources or use [YAML Mode](https://www.home-assistant.io/lovelace/yaml-mode/) (not recommended))
@@ -267,14 +267,14 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
 2. Grab `group-element-bundle.js`
 
   ```console
-  $ wget https://github.com/custom-cards/group-element/releases/download/0.3.0/group-element-bundle.js
+  $ wget https://github.com/custom-cards/group-element/releases/download/0.4.0/group-element-bundle.js
   ```
 
 3. Add a reference to `group-element-bundle.js` inside your `ui-lovelace.yaml`.
 
   ```yaml
   resources:
-    - url: /local/group-element-bundle.js?v=0.3.0
+    - url: /local/group-element-bundle.js?v=0.4.0
       type: module
   ```
 
@@ -299,7 +299,7 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
 
   ```yaml
   resources:
-    - url: /local/group-element-bundle.js?v=0.3.0
+    - url: /local/group-element-bundle.js?v=0.4.0
       type: module
   ```
 
