@@ -66,6 +66,10 @@ customElements.define(
         this._toggleTap = config.toggle_tap;
       }
 
+      if (this._toggleTap) {
+        this.style.cursor = "pointer";
+      }
+
       if (config.no_toggle_hide !== undefined) {
         this._noToggleHide = config.no_toggle_hide;
       }
@@ -287,6 +291,8 @@ customElements.define(
           element.style.setProperty(prop, buttonConfig.style[prop]);
         });
       }
+
+      element.style.setProperty("cursor", "pointer");
 
       element.addEventListener("click", (ev) => {
         if (ev.target !== element) {

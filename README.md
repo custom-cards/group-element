@@ -4,9 +4,9 @@ An element to group other elements in [Home Assistant](https://github.com/home-a
 
 Perfect for creating dynamic interfaces while reusing UI real-estate.
 
-| Turn this: | In to this (adding TV & dimmer controls since there's more room now) |
+| Turn this: | In to this (adding many controls) |
 |------|------|
-| <img src="https://github.com/custom-cards/group-element/blob/master/docs/Before.jpg?raw=true" width="360" height="273"></a> | <a href="https://youtu.be/1lgNFSjI4cA"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group-full-demo.gif?raw=true" width="360" height="273"></a>
+| <img src="https://github.com/custom-cards/group-element/blob/master/docs/Before.jpg?raw=true" width="360" height="273"></a> | <a href="https://youtu.be/1lgNFSjI4cA"><img src="https://github.com/custom-cards/group-element/blob/master/docs/Group-full-new.gif?raw=true" width="360" height="273"></a>
 
 ## Using the element
 
