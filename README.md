@@ -27,7 +27,7 @@ No more clogged UIs or living without full control due to space contraints.
 | visible | boolean | true | v0.1 | Sets initial visibility.
 | visible_style | list |  | v0.3 | Styles to apply when group is visible (applied with !important).
 | grouping_code | numeric | -1 | v0.1 | When using multiple group-elements this allows to specify that only a single group with the same grouping code should be shown. All other groups sharing the same grouping_code are automatically hidden. (only works within the same level)
-| no_toggle_hide | boolean | false | v0.3 | Should the group only toggle to visible when clicked and not toggle to hide if clicked again. Useful for us with grouping_code when grouping will hide the other groups anyway.
+| no_toggle_hide | boolean | false | v0.3 | Should the group only toggle to visible when clicked and not toggle to hide if clicked again. Useful for use with grouping_code when grouping will hide the other groups anyway.
 | fully_hide_other_groups_on_show | boolean | false | v0.3 | Fully hides all other groups sharing the same grouping_code when this group is shown. This includes also the elements under the toggle_area_elements if specified.
 
 #### Elements position options (elements_pos)
