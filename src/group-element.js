@@ -192,10 +192,10 @@ customElements.define(
         }
       });
 
-      this._toggleAreaElements.map((element) => {
-        if (!element.parentElement) {
-          element.hass = this._hass;
-          this.appendChild(element);
+      this._toggleAreaElements.map((el) => {
+        el.hass = this._hass;
+        if (!el.parentElement) {
+          this.appendChild(el);
         }
       });
 
