@@ -1,4 +1,4 @@
-import { createHuiElement } from "./createHuiElement";
+import { createHuiElement } from "./createHuiElement.js";
 
 export function createStyledHuiElement(elementConfig, eventTarget) {
   const element = createHuiElement(elementConfig, eventTarget);
@@ -8,7 +8,7 @@ export function createStyledHuiElement(elementConfig, eventTarget) {
   }
 
   if (elementConfig.style) {
-    Object.keys(elementConfig.style).forEach((prop) => {
+    Object.keys(elementConfig.style).forEach(prop => {
       element.style.setProperty(prop, elementConfig.style[prop]);
     });
   }
