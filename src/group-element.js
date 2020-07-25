@@ -1,4 +1,4 @@
-import { createStyledHuiElement } from "./hass/createStyledHuiElement";
+import { createStyledHuiElement } from "./hass/createStyledHuiElement.js";
 
 customElements.define(
   "group-element",
@@ -15,7 +15,7 @@ customElements.define(
       this._container = undefined;
       this.fullyHideOtherGroupsOnShow = undefined;
 
-      this.addEventListener("click", (ev) => {
+      this.addEventListener("tap", ev => {
         // if click is on internal element and there are no elements in toggle area user asked to show - get out
         // if there are - handle tap/toggle visibility
         if (ev.target !== this && this._toggleAreaElements.length === 0) {
@@ -36,7 +36,7 @@ customElements.define(
       }
 
       if (this._elements.length > 0) {
-        this._elements.map((el) => {
+        this._elements.map(el => {
           if (el.parentElement) {
             el.parentElement.removeChild(el);
           }
@@ -46,7 +46,7 @@ customElements.define(
       }
 
       if (this._toggleAreaElements.length > 0) {
-        this._toggleAreaElements.map((el) => {
+        this._toggleAreaElements.map(el => {
           if (el.parentElement) {
             el.parentElement.removeChild(el);
           }
@@ -85,7 +85,7 @@ customElements.define(
 
       if (config.visible_style) {
         var dynamicStyle = "";
-        Object.keys(config.visible_style).forEach((prop) => {
+        Object.keys(config.visible_style).forEach(prop => {
           dynamicStyle +=
             prop + ": " + config.visible_style[prop] + " !important;\n";
         });
@@ -129,7 +129,7 @@ customElements.define(
       }
 
       if (this._elements.length === 0) {
-        this._config.elements.map((elementConfig) => {
+        this._config.elements.map(elementConfig => {
           const element = createStyledHuiElement(
             elementConfig,
             this.parentElement
@@ -158,7 +158,7 @@ customElements.define(
         this._config.toggle_area_elements &&
         this._toggleAreaElements.length === 0
       ) {
-        this._config.toggle_area_elements.map((elementConfig) => {
+        this._config.toggle_area_elements.map(elementConfig => {
           const element = createStyledHuiElement(
             elementConfig,
             this.parentElement
@@ -181,7 +181,7 @@ customElements.define(
         }
       }
 
-      this._elements.map((el) => {
+      this._elements.map(el => {
         if (this._visible) {
           el.hass = this._hass;
           if (!el.parentElement) {
@@ -192,7 +192,7 @@ customElements.define(
         }
       });
 
-      this._toggleAreaElements.map((el) => {
+      this._toggleAreaElements.map(el => {
         el.hass = this._hass;
         if (!el.parentElement) {
           this.appendChild(el);
@@ -211,7 +211,7 @@ customElements.define(
         this._container = undefined;
       }
 
-      this._elements.map((el) => {
+      this._elements.map(el => {
         if (el.parentElement) {
           el.parentElement.removeChild(el);
         }
@@ -219,7 +219,7 @@ customElements.define(
 
       this._elements = [];
 
-      this._toggleAreaElements.map((el) => {
+      this._toggleAreaElements.map(el => {
         if (el.parentElement) {
           el.parentElement.removeChild(el);
         }
@@ -242,7 +242,7 @@ customElements.define(
       this.updateElements();
 
       if (this._visible && this.attributes.groupingCode) {
-        this.parentElement.querySelectorAll("group-element").forEach((el) => {
+        this.parentElement.querySelectorAll("group-element").forEach(el => {
           if (
             el !== this &&
             el.attributes.groupingCode !== undefined &&
@@ -258,7 +258,7 @@ customElements.define(
           }
         });
       } else if (hide !== undefined) {
-        this.parentElement.querySelectorAll("group-element").forEach((el) => {
+        this.parentElement.querySelectorAll("group-element").forEach(el => {
           el.style.display = hide ? "none" : "block";
         });
       }
@@ -269,7 +269,7 @@ customElements.define(
 
       element.className = "element";
 
-      Object.keys(elementsPosConfig).forEach((prop) => {
+      Object.keys(elementsPosConfig).forEach(prop => {
         element.style.setProperty(prop, elementsPosConfig[prop]);
       });
 
@@ -287,14 +287,14 @@ customElements.define(
       element.className = "element";
 
       if (buttonConfig.style) {
-        Object.keys(buttonConfig.style).forEach((prop) => {
+        Object.keys(buttonConfig.style).forEach(prop => {
           element.style.setProperty(prop, buttonConfig.style[prop]);
         });
       }
 
       element.style.setProperty("cursor", "pointer");
 
-      element.addEventListener("click", (ev) => {
+      element.addEventListener("click", ev => {
         if (ev.target !== element) {
           ev.stopPropagation();
           return;

@@ -1,5 +1,5 @@
 import deepClone from "deep-clone-simple";
-import { fireEvent } from "./fireEvent";
+import { fireEvent } from "./fireEvent.js";
 
 const CUSTOM_TYPE_PREFIX = "custom:";
 const TIMEOUT = 2000;
@@ -49,7 +49,7 @@ const _createErrorElement = (error, config) => {
   el.setConfig({
     type: "error",
     error,
-    config,
+    config
   });
   return el;
 };
