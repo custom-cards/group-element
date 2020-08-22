@@ -62,8 +62,8 @@
     "react/jsx-no-undef": 2,
     "react/jsx-uses-react": 2,
     "react/jsx-uses-vars": 2,
-    "no-restricted-syntax": [0, "ForOfStatement"],
-    "prettier/prettier": "error"
+    "no-restricted-syntax": [0, "ForOfStatement"]/*,
+    "prettier/prettier": "error"*/
   },
   "plugins": ["react", "prettier"]
 }
