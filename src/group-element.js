@@ -15,7 +15,7 @@ customElements.define(
       this._container = undefined;
       this.fullyHideOtherGroupsOnShow = undefined;
 
-      this.addEventListener("tap", (ev) => {
+      this.addEventListener("click", (ev) => {
         // if click is on internal element and there are no elements in toggle area user asked to show - get out
         // if there are - handle tap/toggle visibility
         if (ev.target !== this && this._toggleAreaElements.length === 0) {
