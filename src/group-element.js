@@ -20,20 +20,20 @@ customElements.define(
       this.addEventListener("click", (ev) => this.handleAction(ev));
     }
 
-    handleAction(ev){
-        // if click is on internal element and there are no elements in toggle area user asked to show - get out
-        // if there are - handle tap/toggle visibility
-        if (ev.target !== this && this._toggleAreaElements.length === 0) {
-          ev.stopPropagation();
-          return;
-        }
-        this.toggleVisibility(
-          true,
-          this.fullyHideOtherGroupsOnShow !== undefined &&
-            this.fullyHideOtherGroupsOnShow
-        );
-
+    handleAction(ev) {
+      // if click is on internal element and there are no elements in toggle area user asked to show - get out
+      // if there are - handle tap/toggle visibility
+      if (ev.target !== this && this._toggleAreaElements.length === 0) {
         ev.stopPropagation();
+        return;
+      }
+      this.toggleVisibility(
+        true,
+        this.fullyHideOtherGroupsOnShow !== undefined &&
+          this.fullyHideOtherGroupsOnShow
+      );
+
+      ev.preventDefault();
     }
 
     setConfig(config) {
