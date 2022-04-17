@@ -294,7 +294,7 @@ To do this, go to Configure UI -> Raw Config Editor and paste this under resourc
 ## Updating
 1. Find your `group-element-bundle.js` file in `config/www` or wherever you ended up storing it.
 
-2. Replace the local file with the latest one attached in the [latest release](https://github.com/yosilev/group-element/releases/latest).
+2. Replace the local file with the latest one attached in the [latest release](https://github.com/custom-cards/group-element/releases/latest).
 
 3. Add the new version number to the end of the cards reference url in your `ui-lovelace.yaml` like below.
 
