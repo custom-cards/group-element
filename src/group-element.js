@@ -15,7 +15,12 @@ customElements.define(
       this._container = undefined;
       this.fullyHideOtherGroupsOnShow = undefined;
 
-      this.addEventListener("click", (ev) => {
+      // handle both tap and click since it's inconsistent in picture-element
+      this.addEventListener("tap", (ev) => this.handleAction(ev));
+      this.addEventListener("click", (ev) => this.handleAction(ev));
+    }
+
+    handleAction(ev){
         // if click is on internal element and there are no elements in toggle area user asked to show - get out
         // if there are - handle tap/toggle visibility
         if (ev.target !== this && this._toggleAreaElements.length === 0) {
@@ -27,7 +32,8 @@ customElements.define(
           this.fullyHideOtherGroupsOnShow !== undefined &&
             this.fullyHideOtherGroupsOnShow
         );
-      });
+
+        ev.stopPropagation();
     }
 
     setConfig(config) {
