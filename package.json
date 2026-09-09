@@ -45,7 +45,7 @@
     "build": "npm run lint && npm run rollup && npm run babel",
     "rollup": "rollup -c",
     "babel": "babel dist/group-element-bundle.js --out-file dist/group-element-bundle.js",
-    "lint": "./node_modules/.bin/eslint src/* --ext .js",
+    "lint": "eslint src --ext .js",
     "watch": "rollup -c --watch"
   }
 }

@@ -1,8 +1,13 @@
 import { createStyledHuiElement } from "./hass/createStyledHuiElement.js";
+import "./group-element-editor.js";
 
 customElements.define(
   "group-element",
   class HuiGroupElement extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement("group-element-editor");
+    }
+
     constructor() {
       super();
       this._hass = {};
@@ -14,6 +19,12 @@ customElements.define(
       this._noToggleHide = false;
       this._container = undefined;
       this.fullyHideOtherGroupsOnShow = undefined;
+      this._editorPreviewRestore = undefined;
+      this._editorPreviewHandler = event => this.handleEditorPreview(event);
+      window.addEventListener(
+        "group-element-editor-preview",
+        this._editorPreviewHandler
+      );
 
       // handle both tap and click since it's inconsistent in picture-element
       this.addEventListener("click", () => this.toggleVisibility(
@@ -26,6 +37,10 @@ customElements.define(
     setConfig(config) {
       if (!config.elements || !Array.isArray(config.elements)) {
         throw new Error("Error in card configuration.");
+      }
+
+      if (this._editorPreviewRestore) {
+        this.restoreEditorPreview();
       }
 
       if (this._elements.length > 0) {
@@ -102,7 +117,45 @@ customElements.define(
     set hass(hass) {
       this._hass = hass;
 
+      if (this._visible && this.shouldHideForEntityState()) {
+        this._visible = false;
+      }
+
       this.updateElements();
+
+      window.requestAnimationFrame(() => {
+        const preview = window.__groupElementEditorPreview;
+        if (preview && this.hasMatchingConfig(preview.config)) {
+          this.showEditorPreview(preview.target);
+        }
+      });
+    }
+
+    shouldHideForEntityState() {
+      const condition = this._config.hide_when;
+      if (!condition || !condition.entity || condition.state === undefined) {
+        return false;
+      }
+
+      return (
+        this._hass.states &&
+        this._hass.states[condition.entity] &&
+        this._hass.states[condition.entity].state === condition.state
+      );
+    }
+
+    show() {
+      if (!this._visible) {
+        this._visible = true;
+        this.updateElements();
+      }
+    }
+
+    hide() {
+      if (this._visible) {
+        this._visible = false;
+        this.updateElements();
+      }
     }
 
     // required since otherwise if child custom elements are loaded later then event fired (ll-rebuild) will not be handled
@@ -127,6 +180,10 @@ customElements.define(
             elementConfig,
             this.parentElement
           );
+
+          if (element.tagName === "GROUP-ELEMENT") {
+            element._groupElementParent = this;
+          }
 
           this._elements.push(element);
         });
@@ -261,12 +318,168 @@ customElements.define(
       const element = document.createElement("div");
 
       element.className = "element";
+      element._groupElementOwner = this;
 
       Object.keys(elementsPosConfig).forEach((prop) => {
         element.style.setProperty(prop, elementsPosConfig[prop]);
       });
 
       return element;
+    }
+
+    handleEditorPreview(event) {
+      const detail = event.detail || {};
+      if (!detail.config || !this.hasMatchingConfig(detail.config)) {
+        return;
+      }
+
+      if (detail.show) {
+        this.showEditorPreview(detail.target);
+      } else {
+        this.hideEditorPreview(detail.target);
+      }
+    }
+
+    hasMatchingConfig(config) {
+      return JSON.stringify(this._config) === JSON.stringify(config);
+    }
+
+    getParentGroup() {
+      if (this._groupElementParent) {
+        return this._groupElementParent;
+      }
+
+      let parent = this.parentElement;
+      while (parent) {
+        if (parent.tagName === "GROUP-ELEMENT") {
+          return parent;
+        }
+        if (parent._groupElementOwner) {
+          return parent._groupElementOwner;
+        }
+        parent = parent.parentElement;
+      }
+      return undefined;
+    }
+
+    showEditorPreview(target) {
+      if (
+        this._editorPreviewRestore &&
+        this._editorPreviewRestore.target === target
+      ) {
+        return;
+      }
+      if (this._editorPreviewRestore) {
+        this.restoreEditorPreview();
+      }
+
+      const chain = [];
+      let group = this;
+      while (group) {
+        chain.push({
+          group,
+          visible: group._visible,
+          display: group.style.display
+        });
+        group = group.getParentGroup();
+      }
+
+      chain
+        .slice()
+        .reverse()
+        .forEach(item => {
+          item.group.style.display = "block";
+          item.group._visible = !(
+            target === "toggle-area" &&
+            item.group === this &&
+            this._toggleTap
+          );
+          item.group.updateElements();
+        });
+
+      const highlighted = [];
+      if (target === "elements-container") {
+        if (this._container) {
+          highlighted.push(this._container);
+        }
+      } else if (target === "whole-group") {
+        highlighted.push(this);
+        if (this._container) {
+          highlighted.push(this._container);
+        }
+      } else {
+        highlighted.push(this);
+      }
+
+      if (highlighted.length === 0) {
+        chain.forEach(item => {
+          item.group._visible = item.visible;
+          item.group.style.display = item.display;
+          item.group.updateElements();
+        });
+        return;
+      }
+
+      this._editorPreviewRestore = {
+        target,
+        chain,
+        highlighted: highlighted.map(element => ({
+          element,
+          border: element.style.getPropertyValue("border"),
+          borderPriority: element.style.getPropertyPriority("border"),
+          boxSizing: element.style.getPropertyValue("box-sizing"),
+          boxSizingPriority: element.style.getPropertyPriority("box-sizing")
+        }))
+      };
+      highlighted.forEach(element => {
+        element.style.setProperty("border", "2px solid red", "important");
+        element.style.setProperty("box-sizing", "border-box", "important");
+      });
+    }
+
+    hideEditorPreview(target) {
+      if (
+        !this._editorPreviewRestore ||
+        this._editorPreviewRestore.target !== target
+      ) {
+        return;
+      }
+      this.restoreEditorPreview();
+    }
+
+    restoreEditorPreview() {
+      const restore = this._editorPreviewRestore;
+      if (!restore) {
+        return;
+      }
+
+      restore.highlighted.forEach(item => {
+        if (item.border) {
+          item.element.style.setProperty(
+            "border",
+            item.border,
+            item.borderPriority
+          );
+        } else {
+          item.element.style.removeProperty("border");
+        }
+        if (item.boxSizing) {
+          item.element.style.setProperty(
+            "box-sizing",
+            item.boxSizing,
+            item.boxSizingPriority
+          );
+        } else {
+          item.element.style.removeProperty("box-sizing");
+        }
+      });
+
+      restore.chain.forEach(item => {
+        item.group._visible = item.visible;
+        item.group.style.display = item.display;
+        item.group.updateElements();
+      });
+      this._editorPreviewRestore = undefined;
     }
 
     createCloseButton(buttonConfig) {
