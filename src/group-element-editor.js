@@ -45,6 +45,17 @@ const POSITION_TEMPLATE = {
 const clone = config => JSON.parse(JSON.stringify(config));
 const owns = (object, property) =>
   Object.prototype.hasOwnProperty.call(object, property);
+const sortConfig = value => {
+  if (Array.isArray(value)) return value.map(item => sortConfig(item));
+  if (!value || typeof value !== "object") return value;
+  return Object.keys(value)
+    .sort()
+    .reduce((result, key) => {
+      result[key] = sortConfig(value[key]);
+      return result;
+    }, {});
+};
+const serializeConfig = config => JSON.stringify(sortConfig(config));
 
 class GroupElementEditor extends HTMLElement {
   constructor() {
@@ -56,6 +67,13 @@ class GroupElementEditor extends HTMLElement {
     this._lastEmittedConfig = undefined;
     this._openSections = new Set();
     this._previewState = {};
+    this._cssEmitTimer = undefined;
+
+    ["keydown", "keypress", "keyup"].forEach(type => {
+      this.shadowRoot.addEventListener(type, event => {
+        event.stopPropagation();
+      });
+    });
   }
 
   set hass(hass) {
@@ -67,8 +85,11 @@ class GroupElementEditor extends HTMLElement {
     if (!config || !Array.isArray(config.elements)) {
       throw new Error("Group element requires an elements array.");
     }
-    const serialized = JSON.stringify(config);
-    if (serialized === this._lastEmittedConfig) {
+    const serialized = serializeConfig(config);
+    if (
+      serialized === this._lastEmittedConfig ||
+      serialized === serializeConfig(this._config)
+    ) {
       this._config = clone(config);
       this._lastEmittedConfig = undefined;
       return;
@@ -83,6 +104,7 @@ class GroupElementEditor extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.flushScheduledEmit();
     Object.keys(this._previewState).forEach(target =>
       this.setPreview(target, false)
     );
@@ -264,8 +286,9 @@ class GroupElementEditor extends HTMLElement {
         return;
       }
       this.setNested(property, value || {});
-      this.emit();
+      this.scheduleEmit();
     });
+    editor.addEventListener("focusout", () => this.flushScheduledEmit());
     section.appendChild(editor);
     (parent || this.shadowRoot).appendChild(section);
   }
@@ -650,8 +673,12 @@ class GroupElementEditor extends HTMLElement {
   }
 
   emit() {
+    if (this._cssEmitTimer !== undefined) {
+      window.clearTimeout(this._cssEmitTimer);
+      this._cssEmitTimer = undefined;
+    }
     const config = clone(this._config);
-    this._lastEmittedConfig = JSON.stringify(config);
+    this._lastEmittedConfig = serializeConfig(config);
     this.dispatchEvent(
       new CustomEvent("config-changed", {
         bubbles: true,
@@ -665,6 +692,23 @@ class GroupElementEditor extends HTMLElement {
         this.setPreview(target, true);
       }
     });
+  }
+
+  scheduleEmit() {
+    if (this._cssEmitTimer !== undefined) {
+      window.clearTimeout(this._cssEmitTimer);
+    }
+    this._cssEmitTimer = window.setTimeout(() => {
+      this._cssEmitTimer = undefined;
+      this.emit();
+    }, 350);
+  }
+
+  flushScheduledEmit() {
+    if (this._cssEmitTimer === undefined) return;
+    window.clearTimeout(this._cssEmitTimer);
+    this._cssEmitTimer = undefined;
+    this.emit();
   }
 
   createSection(className) {
