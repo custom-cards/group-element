@@ -4,3 +4,5 @@ package-lock.json
 .DS_Store
 tasks.json
 yarn.lock
+/scripts/
+all-components-no-cardtools-with-group.updated.js

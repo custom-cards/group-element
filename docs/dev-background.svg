@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16213e"/>
+      <stop offset="1" stop-color="#0f3460"/>
+    </linearGradient>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="600" fill="url(#background)"/>
+  <rect width="1000" height="600" fill="url(#grid)"/>
+  <text x="500" y="70" fill="#ffffff" fill-opacity="0.9" font-family="sans-serif"
+        font-size="34" text-anchor="middle">group-element editor development</text>
+</svg>
