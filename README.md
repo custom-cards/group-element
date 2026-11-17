@@ -2,7 +2,7 @@
 
 An element to group other elements in [Home Assistant](https://github.com/home-assistant/home-assistant) [picture-elements](https://www.home-assistant.io/lovelace/picture-elements/) with dynamic toggle capability.
 
-2026 version - now with visual editor with draggable container and elements!
+<h2>2026 version - now with visual editor with draggable container and elements!</h2>
 
 Perfect for creating dynamic interfaces while reusing UI real-estate.
 
