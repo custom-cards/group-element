@@ -33,7 +33,10 @@ customElements.define(
       this._noToggleHide = false;
       this._container = undefined;
       this.fullyHideOtherGroupsOnShow = undefined;
+      this._visibleStyleNode = undefined;
       this._editorPreviewRestore = undefined;
+      this._editorListenersActive = false;
+      this._runtimeSyncFrame = undefined;
       this._editorPreviewHandler = event => this.handleEditorPreview(event);
       this._dragEditorSession = undefined;
       this._nestedDragPress = undefined;
@@ -46,15 +49,6 @@ customElements.define(
       this._nestedPointerCancel = event =>
         this.handleNestedPointerCancel(event);
       this._nestedBlockedAction = event => this.blockNestedAction(event);
-      window.addEventListener(
-        "group-element-editor-preview",
-        this._editorPreviewHandler
-      );
-      window.addEventListener(
-        "group-element-editor-drag-state",
-        this._dragEditorStateHandler
-      );
-
       // handle both tap and click since it's inconsistent in picture-element
       this.addEventListener("click", () => this.toggleVisibility(
         true,
@@ -72,64 +66,44 @@ customElements.define(
         this.restoreEditorPreview();
       }
       this.clearNestedEditingMarks();
-
-      if (this._elements.length > 0) {
-        this._elements.map((el) => {
-          if (el.parentElement) {
-            el.parentElement.removeChild(el);
-          }
-        });
-
-        this._elements = [];
-      }
-
-      if (this._toggleAreaElements.length > 0) {
-        this._toggleAreaElements.map((el) => {
-          if (el.parentElement) {
-            el.parentElement.removeChild(el);
-          }
-        });
-
-        this._toggleAreaElements = [];
-      }
+      this.removeAllElements();
 
       this._config = config;
 
       this.style.transform = "none";
-      if (config.visible !== undefined) {
-        this._visible = config.visible;
-      }
-
-      if (config.toggle_tap !== undefined) {
-        this._toggleTap = config.toggle_tap;
-      }
-
+      this._visible = config.visible !== undefined ? config.visible : true;
+      this._toggleTap = Boolean(config.toggle_tap);
       if (this._toggleTap) {
         this.style.cursor = "pointer";
+      } else if (config.style && config.style.cursor !== undefined) {
+        this.style.setProperty("cursor", config.style.cursor);
+      } else {
+        this.style.removeProperty("cursor");
       }
 
-      if (config.no_toggle_hide !== undefined) {
-        this._noToggleHide = config.no_toggle_hide;
-      }
+      this._noToggleHide = Boolean(config.no_toggle_hide);
 
       if (config.grouping_code !== undefined) {
         this.attributes.groupingCode = config.grouping_code;
+      } else {
+        this.removeAttribute("groupingCode");
       }
 
-      if (config.fully_hide_other_groups_on_show !== undefined) {
-        this.fullyHideOtherGroupsOnShow =
-          config.fully_hide_other_groups_on_show;
-      }
+      this.fullyHideOtherGroupsOnShow =
+        config.fully_hide_other_groups_on_show;
 
       if (config.visible_style) {
-        var dynamicStyle = "";
+        let dynamicStyle = "";
         Object.keys(config.visible_style).forEach((prop) => {
           dynamicStyle +=
             prop + ": " + config.visible_style[prop] + " !important;\n";
         });
 
-        const visibleStyleNode = document.createElement("style");
-        visibleStyleNode.innerHTML =
+        if (!this._visibleStyleNode) {
+          this._visibleStyleNode = document.createElement("style");
+          this.appendChild(this._visibleStyleNode);
+        }
+        this._visibleStyleNode.textContent =
           `
           .visibleOn {
            ` +
@@ -137,8 +111,9 @@ customElements.define(
           `
           }
         `;
-
-        this.appendChild(visibleStyleNode);
+      } else if (this._visibleStyleNode) {
+        this._visibleStyleNode.remove();
+        this._visibleStyleNode = undefined;
       }
 
       this.updateElements();
@@ -187,12 +162,41 @@ customElements.define(
     // because this element does not yet have a parent. If this is ever added as a non custom element remove this + remove also: || !this.parentElement) {
     // from updateElements
     connectedCallback() {
+      if (!this._editorListenersActive) {
+        window.addEventListener(
+          "group-element-editor-preview",
+          this._editorPreviewHandler
+        );
+        window.addEventListener(
+          "group-element-editor-drag-state",
+          this._dragEditorStateHandler
+        );
+        this._editorListenersActive = true;
+      }
       this.updateElements();
       this.scheduleEditorRuntimeSync();
     }
 
     disconnectedCallback() {
+      if (this._editorPreviewRestore) {
+        this.restoreEditorPreview();
+      }
       this.deactivateNestedEditing();
+      if (this._editorListenersActive) {
+        window.removeEventListener(
+          "group-element-editor-preview",
+          this._editorPreviewHandler
+        );
+        window.removeEventListener(
+          "group-element-editor-drag-state",
+          this._dragEditorStateHandler
+        );
+        this._editorListenersActive = false;
+      }
+      if (this._runtimeSyncFrame !== undefined) {
+        window.cancelAnimationFrame(this._runtimeSyncFrame);
+        this._runtimeSyncFrame = undefined;
+      }
       this.removeAllElements();
     }
 
@@ -375,7 +379,11 @@ customElements.define(
     }
 
     scheduleEditorRuntimeSync() {
-      window.requestAnimationFrame(() => {
+      if (this._runtimeSyncFrame !== undefined) {
+        return;
+      }
+      this._runtimeSyncFrame = window.requestAnimationFrame(() => {
+        this._runtimeSyncFrame = undefined;
         if (!this.isConnected) {
           return;
         }
@@ -563,6 +571,20 @@ customElements.define(
           root: this
         });
       });
+      if (
+        this._container &&
+        this._editorPreviewRestore &&
+        ["elements-container", "whole-group"].includes(
+          this._editorPreviewRestore.target
+        )
+      ) {
+        targets.push({
+          collection: "elements_pos",
+          config: { style: groupConfig.elements_pos || {} },
+          element: this._container,
+          root: this._container.parentElement || this.parentElement || this
+        });
+      }
       return targets.filter(target => target.element);
     }
 
@@ -944,6 +966,9 @@ customElements.define(
         element.style.setProperty("border", "2px solid red", "important");
         element.style.setProperty("box-sizing", "border-box", "important");
       });
+      if (this._dragEditorSession) {
+        this.updateNestedEditingMarks();
+      }
     }
 
     hideEditorPreview(target) {
@@ -960,6 +985,9 @@ customElements.define(
       const restore = this._editorPreviewRestore;
       if (!restore) {
         return;
+      }
+      if (this._dragEditorSession) {
+        this.clearNestedEditingMarks();
       }
 
       restore.highlighted.forEach(item => {
@@ -989,16 +1017,18 @@ customElements.define(
         item.group.updateElements();
       });
       this._editorPreviewRestore = undefined;
+      if (this._dragEditorSession) {
+        this.updateNestedEditingMarks();
+      }
     }
 
     createCloseButton(buttonConfig) {
       const element = document.createElement("div");
+      const buttonStyle = buttonConfig.style || {};
 
-      if (buttonConfig.style) {
-        Object.keys(buttonConfig.style).forEach((prop) => {
-          element.style.setProperty(prop, buttonConfig.style[prop]);
-        });
-      }
+      Object.keys(buttonStyle).forEach((prop) => {
+        element.style.setProperty(prop, buttonStyle[prop]);
+      });
 
       element.className = "element";
       element.style.display = "flex";
@@ -1011,7 +1041,7 @@ customElements.define(
 
       elementIcon.group = this;
 
-      elementIcon.style.transform = buttonConfig.style["--icon-transform"];
+      elementIcon.style.transform = buttonStyle["--icon-transform"] || "";
 
       elementIcon.icon =
         buttonConfig.icon !== undefined ? buttonConfig.icon : "hass:close";
@@ -1034,6 +1064,7 @@ customElements.define(
 
     setVisibilityStyle(visible) {
       if (!this._config.visible_style) {
+        this.classList.remove("visibleOn");
         return;
       }
 

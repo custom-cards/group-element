@@ -68,6 +68,7 @@ class GroupElementEditor extends HTMLElement {
     this._lastEmittedConfig = undefined;
     this._openSections = new Set();
     this._previewState = {};
+    this._activePreviewTarget = undefined;
     this._cssEmitTimer = undefined;
     dragSessionSequence++;
     this._dragSessionId = `group-element-editor-${dragSessionSequence}`;
@@ -121,9 +122,7 @@ class GroupElementEditor extends HTMLElement {
       this._dragActionHandler
     );
     this.announceDragEditing(false);
-    Object.keys(this._previewState).forEach(target =>
-      this.setPreview(target, false)
-    );
+    this.clearPreview();
   }
 
   announceDragEditing(active = true) {
@@ -165,10 +164,23 @@ class GroupElementEditor extends HTMLElement {
 
   handleDragAction(event) {
     const detail = event.detail || {};
-    if (
-      detail.sessionId !== this._dragSessionId ||
-      !["elements", "toggle_area_elements"].includes(detail.collection)
-    ) {
+    if (detail.sessionId !== this._dragSessionId) {
+      return;
+    }
+    if (detail.collection === "elements_pos") {
+      if (detail.action !== "move" || !detail.position) return;
+      this._config = {
+        ...this._config,
+        elements_pos: {
+          ...(this._config.elements_pos || {}),
+          ...detail.position
+        }
+      };
+      this.emit();
+      this.render();
+      return;
+    }
+    if (!["elements", "toggle_area_elements"].includes(detail.collection)) {
       return;
     }
     const elements = this._config[detail.collection] || [];
@@ -398,42 +410,103 @@ class GroupElementEditor extends HTMLElement {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "preview-button";
-    button.title = `${label}. Hover for a temporary preview or click to keep it shown.`;
+    button.title = `${label}. Click to turn the preview on or off.`;
     button.setAttribute("aria-label", button.title);
-    const icon = document.createElement("ha-icon");
-    icon.icon = "mdi:selection";
-    button.appendChild(icon);
 
     const state = this._previewState[target] || {
-      hovered: false,
       pinned: false
     };
     this._previewState[target] = state;
     state.button = button;
-    button.classList.toggle("active", state.pinned);
+    this.updatePreviewButtons();
 
-    button.addEventListener("mouseenter", () => {
-      state.hovered = true;
-      if (!state.pinned) this.setPreview(target, true);
-    });
-    button.addEventListener("mouseleave", () => {
-      state.hovered = false;
-      if (!state.pinned) this.setPreview(target, false);
-    });
     button.addEventListener("click", () => {
-      Object.keys(this._previewState).forEach(otherTarget => {
-        const other = this._previewState[otherTarget];
-        if (otherTarget !== target && other.pinned) {
-          other.pinned = false;
-          if (other.button) other.button.classList.remove("active");
-          this.setPreview(otherTarget, false);
-        }
-      });
-      state.pinned = !state.pinned;
-      button.classList.toggle("active", state.pinned);
-      this.setPreview(target, state.pinned);
+      if (target === "whole-group") {
+        const secondaryStates = this.getSecondaryPreviewStates();
+        const turnOn = !secondaryStates.some(item => item.state.pinned);
+        secondaryStates.forEach(item => {
+          item.state.pinned = turnOn;
+        });
+        state.pinned = turnOn;
+      } else {
+        state.pinned = !state.pinned;
+      }
+      this.syncPreview();
+      this.updatePreviewButtons();
     });
     return button;
+  }
+
+  getSecondaryPreviewStates() {
+    const targets = ["toggle-area"];
+    if (this.getMode() !== MODES.NO_TOGGLE) {
+      targets.push("elements-container");
+    }
+    return targets
+      .filter(target => this._previewState[target])
+      .map(target => ({ target, state: this._previewState[target] }));
+  }
+
+  isPreviewOn(target) {
+    if (target !== "whole-group") {
+      const state = this._previewState[target];
+      return Boolean(state && state.pinned);
+    }
+    const secondaryStates = this.getSecondaryPreviewStates();
+    return (
+      secondaryStates.length > 0 &&
+      secondaryStates.some(item => item.state.pinned)
+    );
+  }
+
+  updatePreviewButtons() {
+    Object.keys(this._previewState).forEach(target => {
+      const state = this._previewState[target];
+      if (!state.button) return;
+      const active = this.isPreviewOn(target);
+      state.button.textContent = active ? "Preview on" : "Preview off";
+      state.button.classList.toggle("active", active);
+      state.button.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  syncPreview(force = false) {
+    const states = this.getSecondaryPreviewStates();
+    const toggleArea = states.find(item => item.target === "toggle-area");
+    const elementsContainer = states.find(
+      item => item.target === "elements-container"
+    );
+    let target;
+    if (
+      toggleArea &&
+      toggleArea.state.pinned &&
+      elementsContainer &&
+      elementsContainer.state.pinned
+    ) {
+      target = "whole-group";
+    } else if (toggleArea && toggleArea.state.pinned) {
+      target = "toggle-area";
+    } else if (elementsContainer && elementsContainer.state.pinned) {
+      target = "elements-container";
+    }
+
+    if (this._activePreviewTarget && this._activePreviewTarget !== target) {
+      this.setPreview(this._activePreviewTarget, false);
+    }
+    if (target && (force || this._activePreviewTarget !== target)) {
+      this.setPreview(target, true);
+    }
+    this._activePreviewTarget = target;
+  }
+
+  clearPreview() {
+    if (this._activePreviewTarget) {
+      this.setPreview(this._activePreviewTarget, false);
+      this._activePreviewTarget = undefined;
+    }
+    Object.keys(this._previewState).forEach(target => {
+      this._previewState[target].pinned = false;
+    });
   }
 
   setPreview(target, show) {
@@ -789,12 +862,7 @@ class GroupElementEditor extends HTMLElement {
         detail: { config }
       })
     );
-    Object.keys(this._previewState).forEach(target => {
-      const state = this._previewState[target];
-      if (state.hovered || state.pinned) {
-        this.setPreview(target, true);
-      }
-    });
+    this.syncPreview(true);
     this.announceDragEditing();
   }
 
@@ -857,10 +925,9 @@ class GroupElementEditor extends HTMLElement {
       .template-button { align-items: center; background: transparent; border: 0; color: var(--primary-color); cursor: pointer; display: inline-flex; margin-left: auto; padding: 4px; }
       .template-button:disabled { color: var(--disabled-text-color); cursor: not-allowed; }
       .template-button ha-icon { --mdc-icon-size: 20px; }
-      .preview-button { align-items: center; background: transparent; border: 0; border-radius: 50%; color: var(--secondary-text-color); cursor: pointer; display: inline-flex; margin-left: auto; padding: 7px; }
+      .preview-button { align-items: center; background: transparent; border: 1px solid var(--divider-color); border-radius: 14px; color: var(--secondary-text-color); cursor: pointer; display: inline-flex; font-size: 12px; line-height: 18px; margin-left: auto; padding: 3px 9px; white-space: nowrap; }
       .preview-button + .template-button { margin-left: 0; }
-      .preview-button:hover, .preview-button.active { background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12); color: var(--primary-color); }
-      .preview-button ha-icon { --mdc-icon-size: 22px; }
+      .preview-button.active { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-primary-color, white); }
       .text-input { background: transparent; border: 1px solid var(--input-idle-line-color, var(--divider-color)); border-radius: 4px; box-sizing: border-box; color: var(--primary-text-color); font: inherit; min-height: 44px; outline: none; padding: 0 12px; width: 100%; }
       .text-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 1px var(--primary-color); }
       ha-yaml-editor { display: block; min-height: 100px; width: 100%; }
