@@ -360,80 +360,45 @@ To do this, set the grouping_code to the same number on all groups that should s
 
 ```
 
-## Install
+<!-- ha-marketplace:exclude-start -->
 
-### Simple install
+## Installation
 
-1. Download and copy `group-element-bundle.js` from the [latest release](https://github.com/custom-cards/group-element/releases/latest) into your `config/www` directory.
+[![Open your Home Assistant instance and open Group Element in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=custom-cards&repository=group-element&category=plugin)
 
-2. Add a reference to `group-element-bundle.js` in lovelace.
+### Home Assistant Marketplace or HACS
 
-  ```yaml
-  resources:
-    - url: /local/group-element-bundle.js?v=0.7.0
-      type: module
-  ```
-To do this, go to Configure UI -> Raw Config Editor and paste this under resources or use [YAML Mode](https://www.home-assistant.io/lovelace/yaml-mode/) (not recommended))
+Group Element is included in the default catalog used by both the Home Assistant Marketplace and HACS.
 
-### CLI install
+1. Open the Marketplace (or HACS on older Home Assistant installations).
+2. Search for **Group Element** in the dashboard/frontend category.
+3. Install it and reload the browser when prompted.
 
-1. Move into your `config/www` directory
+The Marketplace or HACS downloads `group-element-bundle.js`, manages updates, and normally adds it as a dashboard JavaScript module automatically. If dashboard resources are managed in YAML, add the resource URL shown by the installation dialog.
 
-2. Grab `group-element-bundle.js`
+### Manual installation
 
-  ```console
-  $ wget https://github.com/custom-cards/group-element/releases/download/0.7.0/group-element-bundle.js
-  ```
+1. Download `group-element-bundle.js` from the [latest release](https://github.com/custom-cards/group-element/releases/latest/download/group-element-bundle.js).
+2. Copy it to the `config/www` directory.
+3. Add it as a dashboard resource:
 
-3. Add a reference to `group-element-bundle.js` inside your `ui-lovelace.yaml`.
+   ```yaml
+   resources:
+     - url: /local/group-element-bundle.js
+       type: module
+   ```
 
-  ```yaml
-  resources:
-    - url: /local/group-element-bundle.js?v=0.7.0
-      type: module
-  ```
+### Updating
 
-### *(Optional)* Add to custom updater
+Marketplace and HACS installations receive updates through Home Assistant. For a manual installation, replace the local bundle with the file from the latest release and reload the browser.
 
-1. Make sure you have the [custom_updater](https://github.com/custom-components/custom_updater) component installed and working.
-
-2. Add a new reference under `card_urls` in your `custom_updater` configuration in `configuration.yaml`.
-//todo: implement tracker
-  ```yaml
-  custom_updater:
-    card_urls:
-      - https://raw.githubusercontent.com/custom-cards/group-element/master/tracker.json
-  ```
-
-## Updating
-1. Find your `group-element-bundle.js` file in `config/www` or wherever you ended up storing it.
-
-2. Replace the local file with the latest one attached in the [latest release](https://github.com/custom-cards/group-element/releases/latest).
-
-3. Add the new version number to the end of the cards reference url in your `ui-lovelace.yaml` like below.
-
-  ```yaml
-  resources:
-    - url: /local/group-element-bundle.js?v=0.7.0
-      type: module
-  ```
-
-*You may need to empty the browsers cache if you have problems loading the updated card.*
+<!-- ha-marketplace:exclude-end -->
 
 ## Getting errors?
-Make sure you have `javascript_version: latest` in your `configuration.yaml` under `frontend:`.
 
-Make sure you have the latest version of `group-element-bundle.js`.
+Make sure the latest `group-element-bundle.js` is installed and loaded as a dashboard resource of type `module`.
 
-If you have issues after updating the card, try clearing your browsers cache or restart Home Assistant.
-
-If you get "Custom element doesn't exist: group-element" or running older browsers try replacing `type: module` with `type: js` in your resource reference, like below.
-
-```yaml
-resources:
-  - url: ...
-    type: js
-```
+If you manage dashboard resources in YAML, verify that the resource URL shown by Marketplace or HACS is present. After installing or updating, reload the browser. If the old bundle is still loaded, clear the browser cache and restart Home Assistant.
 
 ## Known issues
 If you use elements_pos then it is inserted dynamically in to the DOM and so it is shown above other elements. Normally should not be an issue.

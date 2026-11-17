@@ -1,6 +1,6 @@
 {
   "name": "group-element",
-  "version": "v0.1.0",
+  "version": "1.0.0",
   "description": "A toggleable element that groups other elements within Home Assistant's picture-elements cards.",
   "keywords": [
     "home-assistant",
@@ -14,7 +14,7 @@
   ],
   "main": "src/group-element.js",
   "module": "src/group-element.js",
-  "repository": "git@github.com:yosilevy/group-element.git",
+  "repository": "https://github.com/custom-cards/group-element.git",
   "author": "Yosi Levy <yosilevy@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
