@@ -1,6 +1,20 @@
 import { createStyledHuiElement } from "./hass/createStyledHuiElement.js";
 import "./group-element-editor.js";
 
+const DRAG_THRESHOLD = 4;
+const PERCENT_POSITION = /^([+-]?(\d+(\.\d*)?|\.\d+)%|0)$/;
+const clampPercent = value => Math.min(100, Math.max(0, value));
+const comparableConfig = value => {
+  if (Array.isArray(value)) return value.map(item => comparableConfig(item));
+  if (!value || typeof value !== "object") return value;
+  return Object.keys(value)
+    .sort()
+    .reduce((result, key) => {
+      result[key] = comparableConfig(value[key]);
+      return result;
+    }, {});
+};
+
 customElements.define(
   "group-element",
   class HuiGroupElement extends HTMLElement {
@@ -21,9 +35,24 @@ customElements.define(
       this.fullyHideOtherGroupsOnShow = undefined;
       this._editorPreviewRestore = undefined;
       this._editorPreviewHandler = event => this.handleEditorPreview(event);
+      this._dragEditorSession = undefined;
+      this._nestedDragPress = undefined;
+      this._suppressNestedClick = false;
+      this._dragEditorStateHandler = event =>
+        this.handleDragEditorState(event);
+      this._nestedPointerDown = event => this.handleNestedPointerDown(event);
+      this._nestedPointerMove = event => this.handleNestedPointerMove(event);
+      this._nestedPointerUp = event => this.handleNestedPointerUp(event);
+      this._nestedPointerCancel = event =>
+        this.handleNestedPointerCancel(event);
+      this._nestedBlockedAction = event => this.blockNestedAction(event);
       window.addEventListener(
         "group-element-editor-preview",
         this._editorPreviewHandler
+      );
+      window.addEventListener(
+        "group-element-editor-drag-state",
+        this._dragEditorStateHandler
       );
 
       // handle both tap and click since it's inconsistent in picture-element
@@ -42,6 +71,7 @@ customElements.define(
       if (this._editorPreviewRestore) {
         this.restoreEditorPreview();
       }
+      this.clearNestedEditingMarks();
 
       if (this._elements.length > 0) {
         this._elements.map((el) => {
@@ -112,6 +142,7 @@ customElements.define(
       }
 
       this.updateElements();
+      this.scheduleEditorRuntimeSync();
     }
 
     set hass(hass) {
@@ -122,13 +153,7 @@ customElements.define(
       }
 
       this.updateElements();
-
-      window.requestAnimationFrame(() => {
-        const preview = window.__groupElementEditorPreview;
-        if (preview && this.hasMatchingConfig(preview.config)) {
-          this.showEditorPreview(preview.target);
-        }
-      });
+      this.scheduleEditorRuntimeSync();
     }
 
     shouldHideForEntityState() {
@@ -163,9 +188,11 @@ customElements.define(
     // from updateElements
     connectedCallback() {
       this.updateElements();
+      this.scheduleEditorRuntimeSync();
     }
 
     disconnectedCallback() {
+      this.deactivateNestedEditing();
       this.removeAllElements();
     }
 
@@ -341,7 +368,489 @@ customElements.define(
     }
 
     hasMatchingConfig(config) {
-      return JSON.stringify(this._config) === JSON.stringify(config);
+      return (
+        JSON.stringify(comparableConfig(this._config)) ===
+        JSON.stringify(comparableConfig(config))
+      );
+    }
+
+    scheduleEditorRuntimeSync() {
+      window.requestAnimationFrame(() => {
+        if (!this.isConnected) {
+          return;
+        }
+        const preview = window.__groupElementEditorPreview;
+        if (preview && this.hasMatchingConfig(preview.config)) {
+          this.showEditorPreview(preview.target);
+        }
+        const dragEditors =
+          window.__groupElementDragEditors instanceof Map
+            ? Array.from(window.__groupElementDragEditors.values())
+            : [window.__groupElementDragEditor].filter(Boolean);
+        const dragEditor = dragEditors.find(
+          editor =>
+            editor &&
+            editor.active &&
+            editor.config &&
+            this.hasMatchingConfig(editor.config)
+        );
+        if (
+          dragEditor &&
+          dragEditor.active
+        ) {
+          this.activateNestedEditing(dragEditor);
+        } else if (this._dragEditorSession) {
+          this.deactivateNestedEditing();
+        }
+      });
+    }
+
+    handleDragEditorState(event) {
+      const detail = event.detail || {};
+      if (!detail.active) {
+        if (detail.sessionId === this._dragEditorSession) {
+          this.deactivateNestedEditing();
+        }
+        return;
+      }
+      if (detail.config && this.hasMatchingConfig(detail.config)) {
+        this.activateNestedEditing(detail);
+      }
+    }
+
+    activateNestedEditing(detail) {
+      const wasActive = Boolean(this._dragEditorSession);
+      this._dragEditorSession = detail.sessionId;
+      this._nestedSelected = detail.selected;
+      if (!wasActive) {
+        window.addEventListener("pointerdown", this._nestedPointerDown, true);
+        window.addEventListener("pointermove", this._nestedPointerMove, true);
+        window.addEventListener("pointerup", this._nestedPointerUp, true);
+        window.addEventListener(
+          "pointercancel",
+          this._nestedPointerCancel,
+          true
+        );
+        [
+          "mousedown",
+          "click",
+          "dblclick",
+          "contextmenu",
+          "dragstart",
+          "touchstart",
+          "touchend"
+        ].forEach(type =>
+          window.addEventListener(type, this._nestedBlockedAction, true)
+        );
+      }
+      this.updateNestedEditingMarks();
+    }
+
+    deactivateNestedEditing() {
+      if (!this._dragEditorSession) {
+        return;
+      }
+      window.removeEventListener("pointerdown", this._nestedPointerDown, true);
+      window.removeEventListener("pointermove", this._nestedPointerMove, true);
+      window.removeEventListener("pointerup", this._nestedPointerUp, true);
+      window.removeEventListener(
+        "pointercancel",
+        this._nestedPointerCancel,
+        true
+      );
+      [
+        "mousedown",
+        "click",
+        "dblclick",
+        "contextmenu",
+        "dragstart",
+        "touchstart",
+        "touchend"
+      ].forEach(type =>
+        window.removeEventListener(type, this._nestedBlockedAction, true)
+      );
+      this.restoreNestedDragPosition();
+      this._nestedDragPress = undefined;
+      this._dragEditorSession = undefined;
+      this._nestedSelected = undefined;
+      this._suppressNestedClick = false;
+      this.clearNestedEditingMarks();
+    }
+
+    updateNestedEditingMarks() {
+      this.clearNestedEditingMarks();
+      this.classList.add("group-element-nested-editing");
+      const style = document.createElement("style");
+      style.className = "group-element-nested-editor-style";
+      style.textContent = `
+        .group-element-nested-editing .element {
+          outline: none !important;
+        }
+        .group-element-editing-child {
+          cursor: pointer !important;
+        }
+        .group-element-editing-child.group-element-movable {
+          cursor: grab !important;
+          touch-action: none !important;
+        }
+        .group-element-editing-child.group-element-dragging {
+          cursor: grabbing !important;
+        }
+        .group-element-editing-child.group-element-selected {
+          outline: 2px solid var(--primary-color) !important;
+          outline-offset: 2px !important;
+        }
+        @media (hover: hover) {
+          .group-element-editing-child:hover {
+            outline: 1px dashed var(--primary-color) !important;
+          }
+          .group-element-editing-child.group-element-selected:hover {
+            outline: 2px solid var(--primary-color) !important;
+          }
+        }
+      `;
+      this._nestedEditorStyleNode = style;
+      this.appendChild(style);
+
+      this.getNestedTargets().forEach(target => {
+        target.element.classList.add("group-element-editing-child");
+        target.element.classList.toggle(
+          "group-element-movable",
+          Boolean(this.getDragAxes(target.config))
+        );
+        target.element.classList.toggle(
+          "group-element-selected",
+          Boolean(
+            this._nestedSelected &&
+              this._nestedSelected.collection === target.collection &&
+              this._nestedSelected.index === target.index
+          )
+        );
+      });
+    }
+
+    clearNestedEditingMarks() {
+      this.classList.remove("group-element-nested-editing");
+      this.getNestedTargets().forEach(target => {
+        target.element.classList.remove(
+          "group-element-editing-child",
+          "group-element-movable",
+          "group-element-dragging",
+          "group-element-selected"
+        );
+      });
+      if (this._nestedEditorStyleNode) {
+        this._nestedEditorStyleNode.remove();
+        this._nestedEditorStyleNode = undefined;
+      }
+    }
+
+    getNestedTargets() {
+      const groupConfig = this._config || {};
+      const targets = (groupConfig.elements || []).map((config, index) => ({
+        collection: "elements",
+        index,
+        config,
+        element: this._elements[index],
+        root: this._container || this
+      }));
+      (groupConfig.toggle_area_elements || []).forEach((config, index) => {
+        targets.push({
+          collection: "toggle_area_elements",
+          index,
+          config,
+          element: this._toggleAreaElements[index],
+          root: this
+        });
+      });
+      return targets.filter(target => target.element);
+    }
+
+    findNestedTarget(event) {
+      const targets = this.getNestedTargets();
+      for (const node of event.composedPath()) {
+        const target = targets.find(item => item.element === node);
+        if (target) {
+          return target;
+        }
+      }
+      return undefined;
+    }
+
+    isOwnElementsContainerEvent(event) {
+      const container = event
+        .composedPath()
+        .find(node => node && node._groupElementOwner);
+      return Boolean(container && container._groupElementOwner === this);
+    }
+
+    shouldDeferToNestedGroup(event, target) {
+      const path = event.composedPath();
+      const targetIndex = path.indexOf(target.element);
+      if (targetIndex < 0) {
+        return false;
+      }
+      return path.slice(0, targetIndex + 1).some(node =>
+        node &&
+        node !== this &&
+        node.tagName === "GROUP-ELEMENT" &&
+        node._dragEditorSession &&
+        typeof node.findNestedTarget === "function" &&
+        node.findNestedTarget(event)
+      );
+    }
+
+    getDragAxes(config) {
+      if (config.type === "conditional") {
+        return undefined;
+      }
+      const style = config.style || {};
+      if (!style || typeof style !== "object" || Array.isArray(style)) {
+        return undefined;
+      }
+      const value = property => {
+        const raw = style[property];
+        return raw === undefined || raw === null ? "" : String(raw).trim();
+      };
+      if (value("position") && value("position").toLowerCase() !== "absolute") {
+        return undefined;
+      }
+      if (
+        Object.keys(style).some(
+          key => key.toLowerCase().startsWith("inset") && value(key)
+        )
+      ) {
+        return undefined;
+      }
+      const left = value("left");
+      const right = value("right");
+      const top = value("top");
+      const bottom = value("bottom");
+      if ((left && right) || (top && bottom)) {
+        return undefined;
+      }
+      const horizontal = right ? "right" : "left";
+      const vertical = bottom ? "bottom" : "top";
+      if (
+        (value(horizontal) && !PERCENT_POSITION.test(value(horizontal))) ||
+        (value(vertical) && !PERCENT_POSITION.test(value(vertical)))
+      ) {
+        return undefined;
+      }
+      return { horizontal, vertical };
+    }
+
+    getStartPosition(target, axes) {
+      const rootWidth = target.root.offsetWidth;
+      const rootHeight = target.root.offsetHeight;
+      if (!rootWidth || !rootHeight) {
+        return undefined;
+      }
+      const style = target.config.style || {};
+      const computed = getComputedStyle(target.element);
+      const percent = (property, size) => {
+        const configured = style[property];
+        if (configured !== undefined && configured !== null) {
+          const text = String(configured).trim();
+          if (text === "0") return 0;
+          if (text.endsWith("%")) return parseFloat(text);
+        }
+        return (parseFloat(computed[property]) / size) * 100;
+      };
+      const horizontal = percent(axes.horizontal, rootWidth);
+      const vertical = percent(axes.vertical, rootHeight);
+      if (!Number.isFinite(horizontal) || !Number.isFinite(vertical)) {
+        return undefined;
+      }
+      return { horizontal, vertical, rootWidth, rootHeight };
+    }
+
+    handleNestedPointerDown(event) {
+      if (
+        !this._dragEditorSession ||
+        !event.isPrimary ||
+        event.button !== 0 ||
+        event.ctrlKey
+      ) {
+        return;
+      }
+      const target = this.findNestedTarget(event);
+      if (!target) {
+        if (this.isOwnElementsContainerEvent(event)) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+        return;
+      }
+      if (this.shouldDeferToNestedGroup(event, target)) {
+        return;
+      }
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      const axes = this.getDragAxes(target.config);
+      const start = axes ? this.getStartPosition(target, axes) : undefined;
+      this._nestedDragPress = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        target,
+        axes,
+        start,
+        dragged: false,
+        moved: undefined,
+        original: ["left", "right", "top", "bottom"].reduce(
+          (result, property) => {
+            result[property] = {
+              value: target.element.style.getPropertyValue(property),
+              priority: target.element.style.getPropertyPriority(property)
+            };
+            return result;
+          },
+          {}
+        )
+      };
+      try {
+        target.root.setPointerCapture(event.pointerId);
+      } catch (err) {
+        // Window capture still keeps the drag working when capture is absent.
+        this._pointerCaptureUnavailable = Boolean(err);
+      }
+    }
+
+    handleNestedPointerMove(event) {
+      const press = this._nestedDragPress;
+      if (!press || event.pointerId !== press.pointerId) {
+        return;
+      }
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      if (!event.buttons) {
+        this.handleNestedPointerCancel(event);
+        return;
+      }
+      const dx = event.clientX - press.clientX;
+      const dy = event.clientY - press.clientY;
+      if (!press.dragged && Math.hypot(dx, dy) < DRAG_THRESHOLD) {
+        return;
+      }
+      press.dragged = true;
+      if (!press.axes || !press.start) {
+        return;
+      }
+      const horizontalDirection = press.axes.horizontal === "right" ? -1 : 1;
+      const verticalDirection = press.axes.vertical === "bottom" ? -1 : 1;
+      const horizontal = clampPercent(
+        press.start.horizontal +
+          horizontalDirection * (dx / press.start.rootWidth) * 100
+      );
+      const vertical = clampPercent(
+        press.start.vertical +
+          verticalDirection * (dy / press.start.rootHeight) * 100
+      );
+      press.moved = { horizontal, vertical };
+      press.target.element.style.setProperty(
+        press.axes.horizontal,
+        `${horizontal}%`
+      );
+      press.target.element.style.setProperty(
+        press.axes.vertical,
+        `${vertical}%`
+      );
+      press.target.element.classList.add("group-element-dragging");
+    }
+
+    handleNestedPointerUp(event) {
+      const press = this._nestedDragPress;
+      if (!press || event.pointerId !== press.pointerId) {
+        return;
+      }
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      this._suppressNestedClick = true;
+      window.setTimeout(() => {
+        this._suppressNestedClick = false;
+      }, 0);
+      press.target.element.classList.remove("group-element-dragging");
+      if (press.moved && press.axes) {
+        const round = value => Math.round(value * 10) / 10;
+        this.dispatchNestedDragAction("move", press.target, {
+          [press.axes.horizontal]: `${round(press.moved.horizontal)}%`,
+          [press.axes.vertical]: `${round(press.moved.vertical)}%`
+        });
+      } else if (!press.dragged) {
+        this.dispatchNestedDragAction("select", press.target);
+      } else {
+        this.restoreNestedDragPosition();
+      }
+      this._nestedDragPress = undefined;
+    }
+
+    handleNestedPointerCancel(event) {
+      const press = this._nestedDragPress;
+      if (!press || event.pointerId !== press.pointerId) {
+        return;
+      }
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      this.restoreNestedDragPosition();
+      press.target.element.classList.remove("group-element-dragging");
+      this._nestedDragPress = undefined;
+    }
+
+    restoreNestedDragPosition() {
+      const press = this._nestedDragPress;
+      if (!press || !press.original) {
+        return;
+      }
+      Object.keys(press.original).forEach(property => {
+        const original = press.original[property];
+        if (original.value) {
+          press.target.element.style.setProperty(
+            property,
+            original.value,
+            original.priority
+          );
+        } else {
+          press.target.element.style.removeProperty(property);
+        }
+      });
+    }
+
+    blockNestedAction(event) {
+      const target = this.findNestedTarget(event);
+      if (!target) {
+        if (this.isOwnElementsContainerEvent(event)) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+        return;
+      }
+      if (this.shouldDeferToNestedGroup(event, target)) {
+        return;
+      }
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      if (event.type === "click") {
+        const followsPointer = this._suppressNestedClick;
+        this._suppressNestedClick = false;
+        if (target && !this._nestedDragPress && !followsPointer) {
+          this.dispatchNestedDragAction("select", target);
+        }
+      }
+    }
+
+    dispatchNestedDragAction(action, target, position) {
+      window.dispatchEvent(
+        new CustomEvent("group-element-editor-drag-action", {
+          detail: {
+            sessionId: this._dragEditorSession,
+            action,
+            collection: target.collection,
+            index: target.index,
+            position
+          }
+        })
+      );
     }
 
     getParentGroup() {

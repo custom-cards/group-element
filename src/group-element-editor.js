@@ -56,6 +56,7 @@ const sortConfig = value => {
     }, {});
 };
 const serializeConfig = config => JSON.stringify(sortConfig(config));
+let dragSessionSequence = 0;
 
 class GroupElementEditor extends HTMLElement {
   constructor() {
@@ -68,6 +69,9 @@ class GroupElementEditor extends HTMLElement {
     this._openSections = new Set();
     this._previewState = {};
     this._cssEmitTimer = undefined;
+    dragSessionSequence++;
+    this._dragSessionId = `group-element-editor-${dragSessionSequence}`;
+    this._dragActionHandler = event => this.handleDragAction(event);
 
     ["keydown", "keypress", "keyup"].forEach(type => {
       this.shadowRoot.addEventListener(type, event => {
@@ -92,22 +96,119 @@ class GroupElementEditor extends HTMLElement {
     ) {
       this._config = clone(config);
       this._lastEmittedConfig = undefined;
+      this.announceDragEditing();
       return;
     }
     this._config = clone(config);
     this._editing = undefined;
     this.render();
+    this.announceDragEditing();
   }
 
   connectedCallback() {
+    window.addEventListener(
+      "group-element-editor-drag-action",
+      this._dragActionHandler
+    );
     this.render();
+    this.announceDragEditing();
   }
 
   disconnectedCallback() {
     this.flushScheduledEmit();
+    window.removeEventListener(
+      "group-element-editor-drag-action",
+      this._dragActionHandler
+    );
+    this.announceDragEditing(false);
     Object.keys(this._previewState).forEach(target =>
       this.setPreview(target, false)
     );
+  }
+
+  announceDragEditing(active = true) {
+    if (!this._config) return;
+    const detail = {
+      active,
+      sessionId: this._dragSessionId,
+      config: clone(this._config),
+      selected:
+        active && this._editing && this._editing.collection
+          ? {
+              collection: this._editing.collection,
+              index: this._editing.index
+            }
+          : undefined
+    };
+    if (!(window.__groupElementDragEditors instanceof Map)) {
+      window.__groupElementDragEditors = new Map();
+    }
+    if (active) {
+      window.__groupElementDragEditors.set(this._dragSessionId, detail);
+      window.__groupElementDragEditor = detail;
+    } else {
+      window.__groupElementDragEditors.delete(this._dragSessionId);
+      if (
+        window.__groupElementDragEditor &&
+        window.__groupElementDragEditor.sessionId === this._dragSessionId
+      ) {
+        const remaining = Array.from(
+          window.__groupElementDragEditors.values()
+        );
+        window.__groupElementDragEditor = remaining[remaining.length - 1];
+      }
+    }
+    window.dispatchEvent(
+      new CustomEvent("group-element-editor-drag-state", { detail })
+    );
+  }
+
+  handleDragAction(event) {
+    const detail = event.detail || {};
+    if (
+      detail.sessionId !== this._dragSessionId ||
+      !["elements", "toggle_area_elements"].includes(detail.collection)
+    ) {
+      return;
+    }
+    const elements = this._config[detail.collection] || [];
+    const elementConfig = elements[detail.index];
+    if (!elementConfig) return;
+
+    if (detail.action === "select") {
+      this._editing = {
+        collection: detail.collection,
+        index: detail.index,
+        type: "element",
+        elementConfig
+      };
+      this.render();
+      this.announceDragEditing();
+      return;
+    }
+
+    if (detail.action !== "move" || !detail.position) return;
+    const updatedElements = [...elements];
+    const updatedElement = {
+      ...elementConfig,
+      style: {
+        ...((elementConfig && elementConfig.style) || {}),
+        ...detail.position
+      }
+    };
+    updatedElements[detail.index] = updatedElement;
+    this._config = {
+      ...this._config,
+      [detail.collection]: updatedElements
+    };
+    this._editing = {
+      collection: detail.collection,
+      index: detail.index,
+      type: "element",
+      elementConfig: updatedElement
+    };
+    this.emit();
+    this.render();
   }
 
   getMode() {
@@ -416,6 +517,7 @@ class GroupElementEditor extends HTMLElement {
       event.stopPropagation();
       this._editing = { ...event.detail.subElementConfig, collection };
       this.render();
+      this.announceDragEditing();
     });
     section.appendChild(editor);
     this.shadowRoot.appendChild(section);
@@ -585,6 +687,7 @@ class GroupElementEditor extends HTMLElement {
       event.stopPropagation();
       this._editing = undefined;
       this.render();
+      this.announceDragEditing();
     });
     editor.addEventListener("config-changed", event => {
       event.stopPropagation();
@@ -692,6 +795,7 @@ class GroupElementEditor extends HTMLElement {
         this.setPreview(target, true);
       }
     });
+    this.announceDragEditing();
   }
 
   scheduleEmit() {
