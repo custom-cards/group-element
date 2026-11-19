@@ -56,6 +56,7 @@ const sortConfig = value => {
     }, {});
 };
 const serializeConfig = config => JSON.stringify(sortConfig(config));
+const DRAG_HISTORY_LIMIT = 50;
 let dragSessionSequence = 0;
 
 class GroupElementEditor extends HTMLElement {
@@ -70,9 +71,13 @@ class GroupElementEditor extends HTMLElement {
     this._previewState = {};
     this._activePreviewTarget = undefined;
     this._cssEmitTimer = undefined;
+    this._dragUndoStack = [];
+    this._dragRedoStack = [];
     dragSessionSequence++;
     this._dragSessionId = `group-element-editor-${dragSessionSequence}`;
     this._dragActionHandler = event => this.handleDragAction(event);
+    this._dragHistoryKeyHandler = event => this.handleDragHistoryKey(event);
+    this.shadowRoot.addEventListener("keydown", this._dragHistoryKeyHandler);
 
     ["keydown", "keypress", "keyup"].forEach(type => {
       this.shadowRoot.addEventListener(type, event => {
@@ -102,6 +107,7 @@ class GroupElementEditor extends HTMLElement {
     }
     this._config = clone(config);
     this._editing = undefined;
+    this.clearDragHistory();
     this.render();
     this.announceDragEditing();
   }
@@ -111,6 +117,7 @@ class GroupElementEditor extends HTMLElement {
       "group-element-editor-drag-action",
       this._dragActionHandler
     );
+    window.addEventListener("keydown", this._dragHistoryKeyHandler);
     this.render();
     this.announceDragEditing();
   }
@@ -121,6 +128,10 @@ class GroupElementEditor extends HTMLElement {
       "group-element-editor-drag-action",
       this._dragActionHandler
     );
+    window.removeEventListener("keydown", this._dragHistoryKeyHandler);
+    if (window.__groupElementLastDragEditor === this._dragSessionId) {
+      window.__groupElementLastDragEditor = undefined;
+    }
     this.announceDragEditing(false);
     this.clearPreview();
   }
@@ -169,6 +180,12 @@ class GroupElementEditor extends HTMLElement {
     }
     if (detail.collection === "elements_pos") {
       if (detail.action !== "move" || !detail.position) return;
+      this.recordDrag(
+        detail.collection,
+        undefined,
+        this._config.elements_pos || {},
+        detail.position
+      );
       this._config = {
         ...this._config,
         elements_pos: {
@@ -176,7 +193,7 @@ class GroupElementEditor extends HTMLElement {
           ...detail.position
         }
       };
-      this.emit();
+      this.emit(true);
       this.render();
       return;
     }
@@ -200,6 +217,12 @@ class GroupElementEditor extends HTMLElement {
     }
 
     if (detail.action !== "move" || !detail.position) return;
+    this.recordDrag(
+      detail.collection,
+      detail.index,
+      (elementConfig && elementConfig.style) || {},
+      detail.position
+    );
     const updatedElements = [...elements];
     const updatedElement = {
       ...elementConfig,
@@ -219,8 +242,115 @@ class GroupElementEditor extends HTMLElement {
       type: "element",
       elementConfig: updatedElement
     };
-    this.emit();
+    this.emit(true);
     this.render();
+  }
+
+  recordDrag(collection, index, style, position) {
+    const before = {};
+    const after = {};
+    Object.keys(position).forEach(property => {
+      before[property] = {
+        exists: owns(style, property),
+        value: style[property]
+      };
+      after[property] = { exists: true, value: position[property] };
+    });
+    this._dragUndoStack.push({ collection, index, before, after });
+    if (this._dragUndoStack.length > DRAG_HISTORY_LIMIT) {
+      this._dragUndoStack.shift();
+    }
+    this._dragRedoStack = [];
+    window.__groupElementLastDragEditor = this._dragSessionId;
+  }
+
+  handleDragHistoryKey(event) {
+    const key = String(event.key).toLowerCase();
+    if (
+      event.defaultPrevented ||
+      event.altKey ||
+      !(event.ctrlKey || event.metaKey) ||
+      !["y", "z"].includes(key) ||
+      window.__groupElementLastDragEditor !== this._dragSessionId ||
+      this.isEditableKeyTarget(event)
+    ) {
+      return;
+    }
+    const redo = key === "y" || event.shiftKey;
+    const changed = redo ? this.redoDrag() : this.undoDrag();
+    if (changed) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }
+
+  isEditableKeyTarget(event) {
+    return event.composedPath().some(node => {
+      if (!node || !node.tagName) return false;
+      const tag = node.tagName.toUpperCase();
+      return (
+        node.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT", "HA-YAML-EDITOR"].includes(tag) ||
+        node.getAttribute && node.getAttribute("role") === "textbox"
+      );
+    });
+  }
+
+  undoDrag() {
+    const entry = this._dragUndoStack.pop();
+    if (!entry || !this.applyDragState(entry, entry.before)) return false;
+    this._dragRedoStack.push(entry);
+    return true;
+  }
+
+  redoDrag() {
+    const entry = this._dragRedoStack.pop();
+    if (!entry || !this.applyDragState(entry, entry.after)) return false;
+    this._dragUndoStack.push(entry);
+    return true;
+  }
+
+  applyDragState(entry, state) {
+    let style;
+    if (entry.collection === "elements_pos") {
+      style = { ...(this._config.elements_pos || {}) };
+    } else {
+      const elements = this._config[entry.collection] || [];
+      const elementConfig = elements[entry.index];
+      if (!elementConfig) {
+        this.clearDragHistory();
+        return false;
+      }
+      style = { ...((elementConfig && elementConfig.style) || {}) };
+    }
+    Object.keys(state).forEach(property => {
+      if (state[property].exists) style[property] = state[property].value;
+      else delete style[property];
+    });
+    if (entry.collection === "elements_pos") {
+      this._config = { ...this._config, elements_pos: style };
+    } else {
+      const elements = [...(this._config[entry.collection] || [])];
+      const elementConfig = elements[entry.index];
+      const updatedElement = { ...elementConfig, style };
+      elements[entry.index] = updatedElement;
+      this._config = { ...this._config, [entry.collection]: elements };
+      if (
+        this._editing &&
+        this._editing.collection === entry.collection &&
+        this._editing.index === entry.index
+      ) {
+        this._editing = { ...this._editing, elementConfig: updatedElement };
+      }
+    }
+    this.emit(true);
+    this.render();
+    return true;
+  }
+
+  clearDragHistory() {
+    this._dragUndoStack = [];
+    this._dragRedoStack = [];
   }
 
   getMode() {
@@ -328,6 +458,7 @@ class GroupElementEditor extends HTMLElement {
   }
 
   setMode(mode) {
+    this.clearDragHistory();
     const config = { ...this._config };
     if (mode === MODES.NO_TOGGLE) {
       config.toggle_tap = false;
@@ -579,6 +710,7 @@ class GroupElementEditor extends HTMLElement {
     });
     editor.addEventListener("elements-changed", event => {
       event.stopPropagation();
+      this.clearDragHistory();
       this._config = {
         ...this._config,
         [collection]: event.detail.elements
@@ -776,6 +908,7 @@ class GroupElementEditor extends HTMLElement {
       elements[index] = elementConfig;
       this._editing = { ...this._editing, elementConfig };
     } else {
+      this.clearDragHistory();
       elements.splice(index, 1);
       this._editing = undefined;
     }
@@ -848,12 +981,13 @@ class GroupElementEditor extends HTMLElement {
     this._config = config;
   }
 
-  emit() {
+  emit(preserveDragRedo = false) {
     if (this._cssEmitTimer !== undefined) {
       window.clearTimeout(this._cssEmitTimer);
       this._cssEmitTimer = undefined;
     }
     const config = clone(this._config);
+    if (!preserveDragRedo) this._dragRedoStack = [];
     this._lastEmittedConfig = serializeConfig(config);
     this.dispatchEvent(
       new CustomEvent("config-changed", {
